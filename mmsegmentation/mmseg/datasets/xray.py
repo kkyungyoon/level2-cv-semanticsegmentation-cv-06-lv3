@@ -1,6 +1,7 @@
 from mmseg.registry import DATASETS
 from .basesegdataset import BaseSegDataset
 
+@DATASETS.register_module()
 class XRayDataset(BaseSegDataset):
     METAINFO = dict(
         classes=('finger-1', 'finger-2', 'finger-3', 'finger-4', 'finger-5',
