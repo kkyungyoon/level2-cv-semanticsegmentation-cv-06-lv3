@@ -60,10 +60,10 @@ def accuracy(pred, target, topk=1, thresh=None, ignore_index=None):
         # Avoid causing ZeroDivisionError when all pixels
         # of an image are ignored
         correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True) + eps
-        if ignore_index is not None:
-            total_num = target[target != ignore_index].numel() + eps
-        else:
-            total_num = target.numel() + eps
+        # if ignore_index is not None:
+        #     total_num = target[target != ignore_index].numel() + eps
+        # else:
+        total_num = target.numel() + eps
         res.append(correct_k.mul_(100.0 / total_num))
     return res[0] if return_single else res
 
