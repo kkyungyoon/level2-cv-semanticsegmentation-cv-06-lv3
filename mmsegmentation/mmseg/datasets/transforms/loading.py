@@ -75,7 +75,7 @@ class LoadXRayAnnotations(MMCV_LoadAnnotations):
             cv2.fillPoly(class_label, [points], 1)
             label[..., class_ind] = class_label
         
-        label = label.transpose(2, 0, 1)
+        # label = label.transpose(2, 0, 1)
 
         results['gt_seg_map'] = label
         results['seg_fields'].append('gt_seg_map')
