@@ -6,7 +6,7 @@ _base_ = [
     '../_base_/datasets/handbone_29_classes_640x640.py',  # 커스텀 데이터셋 설정 파일
     '../_base_/default_runtime.py',  # 기본 런타임 설정
     # '../_base_/schedules/schedule_320k.py'  # 학습 스케줄 설정
-    '../_base_/schedules/schedule_20k.py' 
+    '../_base_/schedules/schedule_25k.py' 
 ]
 
 # 데이터 전처리 설정
@@ -63,7 +63,7 @@ param_scheduler = [
         power=1.0,
         begin=3000,
         end=160000,
-        eta_min=0.0,
+    eta_min=0.0,
         by_epoch=False,
     )
 ]
