@@ -15,7 +15,7 @@ data_preprocessor = dict(size=crop_size)
 # 모델 설정
 model = dict(
     data_preprocessor=data_preprocessor,
-    pretrained='pretrain/beit_large_patch16_224_pt22k_ft22k.pth',  # 사전 학습된 가중치 경로
+    # pretrained='pretrain/beit_large_patch16_224_pt22k_ft22k.pth',  # 사전 학습된 가중치 경로
     backbone=dict(
         type='BEiT',
         embed_dims=1024,
@@ -31,39 +31,8 @@ model = dict(
         embed_dim=1024, 
         rescales=[4, 2, 1, 0.5]
     ),
-    decode_head=dict(
-        type='UPerHead',
-        in_channels=[1024, 1024, 1024, 1024],
-        in_index=[0, 1, 2, 3],
-        pool_scales=(1, 2, 3, 6),
-        channels=1024,
-        dropout_ratio=0.1,
-        num_classes=29,  # 클래스 수 변경
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        align_corners=False,
-        loss_decode=dict(
-            type='CrossEntropyLoss',  # 손실 함수 변경
-            use_sigmoid=True,          # 시그모이드 활성화 사용
-            loss_weight=1.0
-        )
-    ),
-    auxiliary_head=dict(
-        type='FCNHead',
-        in_channels=1024, 
-        num_classes=29,  # 클래스 수 변경
-        in_index=2,
-        channels=256,
-        num_convs=1,
-        concat_input=False,
-        dropout_ratio=0.1,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        align_corners=False,
-        loss_decode=dict(
-            type='CrossEntropyLoss',  # 손실 함수 변경
-            use_sigmoid=True,          # 시그모이드 활성화 사용
-            loss_weight=0.4
-        )
-    ),
+    decode_head=dict(in_channels=[1024, 1024, 1024, 1024], num_classes=29, channels=1024),# 클래스 수 변경 
+    auxiliary_head=dict(in_channels=1024, num_classes=29),    # 클래스 수 변경 
     test_cfg=dict(
         mode='slide', 
         crop_size=(640, 640), 
@@ -99,7 +68,7 @@ param_scheduler = [
 ]
 
 # 데이터 로더 설정
-train_dataloader = dict(batch_size=1)
+train_dataloader = dict(batch_size=2)
 val_dataloader = dict(batch_size=1)
 test_dataloader = val_dataloader
 

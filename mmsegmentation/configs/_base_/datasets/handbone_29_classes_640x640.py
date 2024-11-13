@@ -11,7 +11,7 @@ train_pipeline = [
     #     scale=(2560, 640),
     #     ratio_range=(0.5, 2.0),
     #     keep_ratio=True),
-    dict(type='Resize', scale=(512), keep_ratio=True),
+    dict(type='Resize', scale=(640,640), keep_ratio=True),
     # dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75), #TODO too slow
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
@@ -72,5 +72,5 @@ val_dataloader = dict(
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
-val_evaluator = dict(type='IoUMetric', iou_metrics=['mIoU'])
+val_evaluator = dict(type='DiceCoefficient', num_classes=29)
 test_evaluator = val_evaluator
