@@ -1,0 +1,19 @@
+optimizer:
+  name: Adam
+  lr_backbone: 1e-5
+  params:
+    lr: 1e-4
+    weight_decay: 1e-6
+
+scheduler:
+  name: StepLR
+  params:
+    step_size: 10
+    gamma: 0.7
+
+trainer:
+  max_epochs: 100
+  accelerator: gpu
+  devices: 1
+
+seed: 42  # 시드 값 추가
