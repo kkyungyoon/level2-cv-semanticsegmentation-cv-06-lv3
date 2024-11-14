@@ -38,7 +38,7 @@ logger:
   use_tensorboard: True
   use_wandb: False
   project: test
-  name: arch_encoder_experiments # {arch}_{encoder}_{experiements}
+  name: unet_efficientnet-b0_experiments # {arch}_{encoder}_{experiements}
 
 
 seed: 42  # 시드 값 추가
