@@ -1,5 +1,6 @@
 import segmentation_models_pytorch as smp
 from torch import nn
+import torch.nn.functional as F
 
 from src.utils.data_utils import load_yaml_config
 
@@ -51,6 +52,12 @@ class SmpModel(nn.Module):
 
         # 레이블이 주어지면 손실 계산
         if labels is not None:
+            # 만약 output과 mask의 사이즈가 맞지 않다면, output을 mask의 사이즈에 맞춰주는 작업을 진행
+            output_h, output_w = outputs.size(-2), outputs.size(-1)
+            mask_h, mask_w = labels.size(-2), labels.size(-1)
+            if output_h != mask_h or output_w != mask_w:
+                outputs = F.interpolate(outputs, size=(mask_h, mask_w), mode="bilinear")
+            
             loss = self.criterion(outputs, labels)
             return outputs, loss
         

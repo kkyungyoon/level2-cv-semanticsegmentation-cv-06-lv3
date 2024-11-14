@@ -28,14 +28,10 @@ class XRayDataModule(BaseDataModule):
         else:
             train_transforms = A.Compose(
                 A.Resize(512, 512),
-                # TODO 정규화 할지 말지에 대한 판단을 해보고 추가해야할 사항
-                # ToTensorV2()
             )
 
         test_transforms = A.Compose(
             A.Resize(512, 512)
-            # TODO 정규화 할지 말지에 대한 판단을 해보고 추가해야할 사항
-            # ToTensorV2()
         )
 
         self.collate_fn = None
@@ -117,8 +113,6 @@ class XRayDataModule(BaseDataModule):
                 transform_class = getattr(A, transform_name)
                 transform_list.append(transform_class(**transform_config["params"]))
 
-        # TODO 마찬가지로 정규화 할지 말지 결정해야함
-        # transform_list.append(ToTensorV2())
         
         return A.Compose(
             transform_list,

@@ -8,7 +8,7 @@ model:
   classes: 29
 
 loss:
-  use_different_loss: True # default BCE
+  use_different_loss: True
   name: JaccardLoss
   args:
     mode: multilabel

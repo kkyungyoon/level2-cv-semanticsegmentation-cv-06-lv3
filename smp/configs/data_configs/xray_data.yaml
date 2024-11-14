@@ -10,7 +10,7 @@ data:
     shuffle: true
   val:
     batch_size: 8
-    num_workers: 8
+    num_workers: 4
     shuffle: false
   test:
     batch_size: 8

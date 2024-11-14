@@ -9,6 +9,7 @@ class SmpModule(pl.LightningModule):
         super().__init__()
         self.train_config = load_yaml_config(train_config_path)
         self.model = SmpModel(model_config_path=model_config_path)
+        self.validation_outputs = []
 
     def forward(self, images, labels=None):
         return self.model(images, labels)
@@ -18,7 +19,8 @@ class SmpModule(pl.LightningModule):
         outputs, loss = self.model(images, labels)
 
         # log
-        self.log('train_loss', loss, on_epoch=True, prog_bar=True)
+        self.log('train_loss', loss, prog_bar=True)
+        
 
         return loss
 
@@ -27,32 +29,41 @@ class SmpModule(pl.LightningModule):
         outputs, loss = self.model(images, labels)
 
         # log
-        self.log('val_loss', loss, on_epoch=True, prog_bar=True)
+        self.log('val_loss', loss, prog_bar=True)
 
         outputs = torch.sigmoid(outputs)
         outputs = (outputs > 0.5).float()  # threshold 0.5 적용
         labels = labels.float()
 
-        dics = self.dice_coef(outputs, labels)
+        dices = self.dice_coef(outputs, labels)
 
-        return dics
+        # validation outputs에 추가
+        self.validation_outputs.append(dices)
+        
+        return dices
     
-    def on_validation_epoch_end(self, outputs):
-        # validation_step에서 계산된 dice scores를 모아서 평균값 계산
-        all_dices = torch.stack(outputs)
+    def on_validation_epoch_end(self):
+        if len(self.validation_outputs) == 0:
+            return  # validation_outputs가 비어 있으면 종료
+
+        # 전체 dices를 하나로 합침
+        all_dices = torch.cat(self.validation_outputs, dim=0)  
 
         # 클래스별 Dice score 평균 계산
-        avg_dices_per_class = all_dices.mean(dim=0)
+        dices_per_class = all_dices.mean(dim=0)  
 
         # 전체 평균 Dice score 계산
-        avg_dice = avg_dices_per_class.mean().item()
+        avg_dice = dices_per_class.mean().item()
 
         # 각 클래스에 대한 Dice score 기록
-        for i, dice in enumerate(avg_dices_per_class):
-            self.log(f'class_{i}_dice', dice.item(), on_epoch=True, prog_bar=True)
+        for i, dice in enumerate(dices_per_class):
+            self.log(f'class_{i}_dice', dice.item(), on_epoch=True, prog_bar=False)
 
         # 전체 평균 Dice 기록
         self.log('avg_dice_score', avg_dice, on_epoch=True, prog_bar=True)
+
+        # validation outputs 초기화
+        self.validation_outputs = []
 
         # Return avg dice score for early stopping or logging
         return avg_dice
@@ -95,14 +106,9 @@ class SmpModule(pl.LightningModule):
         
     
     @staticmethod
-    def dice_coef(outputs, targets, eps=1e-4):
-        """
-        Dice coefficient 계산
-        :param outputs: 모델의 예측 (sigmoid를 거친 후 thresholding된 tensor)
-        :param targets: 실제 마스크 (ground truth)
-        :param eps: 작은 값으로 나누기 방지
-        :return: dice coefficient
-        """
-        intersection = (outputs * targets).sum(dim=(1, 2, 3))
-        union = outputs.sum(dim=(1, 2, 3)) + targets.sum(dim=(1, 2, 3))
-        return (2. * intersection + eps) / (union + eps)
+    def dice_coef(y_true, y_pred, eps=1e-4):
+        y_true_f = y_true.flatten(2)
+        y_pred_f = y_pred.flatten(2)
+        intersection = torch.sum(y_true_f * y_pred_f, -1)
+
+        return (2. * intersection + eps) / (torch.sum(y_true_f, -1) + torch.sum(y_pred_f, -1) + eps)
