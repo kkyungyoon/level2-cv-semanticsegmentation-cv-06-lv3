@@ -25,13 +25,14 @@ class XRayDataModule(BaseDataModule):
         # load datasets
         if self.augmentation_config["augmentation"]["use_augmentation"]:
             train_transforms = self._get_augmentation_transforms()
+
         else:
             train_transforms = A.Compose(
-                A.Resize(512, 512),
+                [A.Resize(512, 512)],
             )
 
         test_transforms = A.Compose(
-            A.Resize(512, 512)
+            [A.Resize(512, 512)],
         )
 
         self.collate_fn = None
@@ -101,9 +102,25 @@ class XRayDataModule(BaseDataModule):
                 for sub_transform in transform_config["params"]["transforms"]:
                     transform_class = getattr(A, sub_transform["name"])
                     sub_transforms.append(transform_class(**sub_transform["params"]))
+
+
+                transform_list.append(A.OneOf(
+                    sub_transforms,
+                    p=transform_config["params"]["p"]
+                    ))
+
+                
+                
+                
+            elif transform_name == "SomeOf":
+                # OneOf 변환을 따로 처리
+                sub_transforms = []
+                for sub_transform in transform_config["params"]["transforms"]:
+                    transform_class = getattr(A, sub_transform["name"])
+                    sub_transforms.append(transform_class(**sub_transform["params"]))
                 
                 # OneOf 변환 추가
-                transform_list.append(A.OneOf(
+                transform_list.append(A.SomeOf(
                     sub_transforms, 
                     p=transform_config["params"]["p"],
                     n=transform_config["params"]["n"],
@@ -112,7 +129,6 @@ class XRayDataModule(BaseDataModule):
             else:
                 transform_class = getattr(A, transform_name)
                 transform_list.append(transform_class(**transform_config["params"]))
-
         
         return A.Compose(
             transform_list,
