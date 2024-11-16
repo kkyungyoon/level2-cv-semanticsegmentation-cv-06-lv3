@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 import torch.nn.functional as F
 import numpy as np
 import pandas as pd
+import datetime
 
 from src.models.smp_model import SmpModel
 from src.utils.data_utils import load_yaml_config
@@ -108,7 +109,8 @@ class SmpModule(pl.LightningModule):
             "rle": self.rles,
         })
 
-        df.to_csv(f"./logs/{self.train_config['logger']['name']}.csv", index=False)
+        current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        df.to_csv(f"./logs/{self.train_config['logger']['name']}_{current_time}.csv", index=False)
 
         return df
 
@@ -148,6 +150,8 @@ class SmpModule(pl.LightningModule):
         else:
             return optimizer
 
+        
+    
     @staticmethod
     def dice_coef(y_true, y_pred, eps=1e-4):
         y_true_f = y_true.flatten(2)

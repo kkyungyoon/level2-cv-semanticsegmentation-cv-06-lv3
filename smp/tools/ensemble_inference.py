@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import os
 from tqdm import tqdm
+import datetime
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -137,7 +138,8 @@ def main(args):
     os.makedirs(save_dir, exist_ok=True)
 
     df = pd.DataFrame(rle_data)
-    df.to_csv(f"{save_dir}/{save_filename}_{method}.csv", index=False)
+    current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    df.to_csv(f"{save_dir}/{save_filename}_{method}_{current_time}.csv", index=False)
 
     print("Completed")
 

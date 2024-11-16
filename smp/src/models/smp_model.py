@@ -33,7 +33,7 @@ class SmpModel(nn.Module):
         if loss_name == "JaccardLoss":
             return smp.losses.JaccardLoss(**loss_args)
         elif loss_name == "BCEWithLogitsLoss":
-            return smp.losses.BCEWithLogitsLoss(**loss_args)
+            return nn.BCEWithLogitsLoss(**loss_args)
         elif loss_name == "DiceLoss":
             return smp.losses.DiceLoss(**loss_args)
         elif loss_name == "TverskyLoss":
