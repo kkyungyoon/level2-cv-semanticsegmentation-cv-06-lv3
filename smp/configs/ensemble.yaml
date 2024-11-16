@@ -1,0 +1,6 @@
+csv_paths: [
+  '/data/ephemeral/hbis/logs/upernet_efficientnet-b7_1024.csv',
+  '/data/ephemeral/hbis/logs/segformer_1024.csv',
+]
+
+save_filename: test
