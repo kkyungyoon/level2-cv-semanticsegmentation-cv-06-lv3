@@ -1,8 +1,13 @@
+import os
 import torch
 import pytorch_lightning as pl
+import torch.nn.functional as F
+import numpy as np
+import pandas as pd
 
 from src.models.smp_model import SmpModel
 from src.utils.data_utils import load_yaml_config
+from src.utils.constants import IND2CLASS
 
 class SmpModule(pl.LightningModule):
     def __init__(self, train_config_path, model_config_path):
@@ -10,6 +15,8 @@ class SmpModule(pl.LightningModule):
         self.train_config = load_yaml_config(train_config_path)
         self.model = SmpModel(model_config_path=model_config_path)
         self.validation_outputs = []
+        self.rles = []
+        self.filename_and_class = []
 
     def forward(self, images, labels=None):
         return self.model(images, labels)
@@ -21,7 +28,6 @@ class SmpModule(pl.LightningModule):
         # log
         self.log('train_loss', loss, prog_bar=True)
         
-
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -41,6 +47,29 @@ class SmpModule(pl.LightningModule):
         self.validation_outputs.append(dices)
         
         return dices
+    
+    def test_step(self, batch, batch_idx):
+        images, image_names = batch
+        outputs = self.model(images)
+
+        outputs = F.interpolate(
+            outputs, 
+            size=(2048, 2048),
+            mode="bilinear"         
+            )
+
+        outputs = torch.sigmoid(outputs)
+        outputs = (outputs > 0.5).detach().cpu().numpy()
+
+        for output, image_name in zip(outputs, image_names):
+            for c, segm in enumerate(output):
+                rle = self.encode_mask_to_rle(segm)
+                self.rles.append(rle)
+                self.filename_and_class.append(
+                    f"{IND2CLASS[c]}_{image_name}"
+                )
+
+        return
     
     def on_validation_epoch_end(self):
         if len(self.validation_outputs) == 0:
@@ -67,6 +96,22 @@ class SmpModule(pl.LightningModule):
 
         # Return avg dice score for early stopping or logging
         return avg_dice
+    
+    def on_test_epoch_end(self):
+        classes, filename = zip(*[x.split("_") for x in self.filename_and_class])
+
+        image_name = [os.path.basename(f) for f in filename]
+
+        df = pd.DataFrame({
+            "image_name": image_name,
+            "class": classes,
+            "rle": self.rles,
+        })
+
+        df.to_csv(f"./logs/{self.train_config['logger']['name']}.csv", index=False)
+
+        return df
+
     
     def configure_optimizers(self):
         # lr_backbone을 float로 변환
@@ -103,8 +148,6 @@ class SmpModule(pl.LightningModule):
         else:
             return optimizer
 
-        
-    
     @staticmethod
     def dice_coef(y_true, y_pred, eps=1e-4):
         y_true_f = y_true.flatten(2)
@@ -112,3 +155,17 @@ class SmpModule(pl.LightningModule):
         intersection = torch.sum(y_true_f * y_pred_f, -1)
 
         return (2. * intersection + eps) / (torch.sum(y_true_f, -1) + torch.sum(y_pred_f, -1) + eps)
+    
+    @staticmethod
+    def encode_mask_to_rle(mask):
+        '''
+        mask: numpy array binary mask
+        1 - mask
+        0 - background
+        Returns encoded run length
+        '''
+        pixels = mask.flatten()
+        pixels = np.concatenate([[0], pixels, [0]])
+        runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
+        runs[1::2] -= runs[::2]
+        return ' '.join(str(x) for x in runs)

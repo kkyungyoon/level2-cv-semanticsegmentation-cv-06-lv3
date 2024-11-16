@@ -16,6 +16,7 @@ class XRayDataModule(BaseDataModule):
         self.data_config = load_yaml_config(data_config_path)
         self.augmentation_config = load_yaml_config(augmentation_config_path)
         self.seed = self.data_config['seed']
+        self.image_size = self.data_config['image_size']
         super().__init__(self.data_config)
 
     def setup(self, stage: Optional[str] = None):
@@ -28,11 +29,11 @@ class XRayDataModule(BaseDataModule):
 
         else:
             train_transforms = A.Compose(
-                [A.Resize(512, 512)],
+                [A.Resize(int(self.image_size), int(self.image_size))],
             )
 
         test_transforms = A.Compose(
-            [A.Resize(512, 512)],
+            [A.Resize(int(self.image_size), int(self.image_size))],
         )
 
         self.collate_fn = None

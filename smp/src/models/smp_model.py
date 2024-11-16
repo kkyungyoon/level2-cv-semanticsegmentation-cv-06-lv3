@@ -2,6 +2,7 @@ import segmentation_models_pytorch as smp
 from torch import nn
 import torch.nn.functional as F
 
+from src.losses.combined_loss import CombinedLoss
 from src.utils.data_utils import load_yaml_config
 
 class SmpModel(nn.Module):
@@ -43,6 +44,8 @@ class SmpModel(nn.Module):
             return smp.losses.LovaszLoss(**loss_args)
         elif loss_name == "SoftBCEWithLogitsLoss":
             return smp.losses.SoftBCEWithLogitsLoss(**loss_args)
+        elif loss_name == "CombinedLoss":
+            return CombinedLoss(**loss_args)
         else:
             raise ValueError(f"Unknown loss function: {loss_name}")
     
