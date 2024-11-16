@@ -18,7 +18,7 @@ class CombinedLoss(nn.Module):
             if loss_name == "JaccardLoss":
                 self.losses.append(smp.losses.JaccardLoss(**loss_args))
             elif loss_name == "BCEWithLogitsLoss":
-                self.losses.append(smp.losses.BCEWithLogitsLoss(**loss_args))
+                self.losses.append(nn.BCEWithLogitsLoss(**loss_args))
             elif loss_name == "DiceLoss":
                 self.losses.append(smp.losses.DiceLoss(**loss_args))
             elif loss_name == "TverskyLoss":
