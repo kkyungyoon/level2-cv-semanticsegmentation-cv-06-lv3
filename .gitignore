@@ -4,3 +4,5 @@ __pycache__
 *.gz
 *.xlsx
 */output
+*/wandb/
+*/wandb_logs/*

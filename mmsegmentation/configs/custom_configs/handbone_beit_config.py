@@ -89,3 +89,17 @@ evaluation = dict(
         )
     )
 )
+
+visualizer = dict(
+    type='SegLocalVisualizer',
+    vis_backends=[
+        dict(type='WandbVisBackend',
+             init_kwargs=dict(
+                 project='mmsegmentation',
+                 name='here',
+                #  entity='your_wandb_username'
+             ),
+             save_dir='wandb_logs')
+    ],
+    name='visualizer'
+)
