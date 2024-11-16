@@ -21,4 +21,5 @@ data:
     num_workers: 4
     shuffle: false
 
+image_size: 512
 seed: 42

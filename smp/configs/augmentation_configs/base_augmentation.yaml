@@ -6,6 +6,3 @@ augmentation:
       params:
         width: 512
         height: 512
-    - name: RandomBrightnessContrast
-      params:
-        p: 0.2
