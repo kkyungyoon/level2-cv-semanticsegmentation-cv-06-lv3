@@ -1,0 +1,26 @@
+# configs/augmentation_configs/base_augmentation.yaml
+augmentation:
+  use_augmentation: True
+  transforms:
+    - name: OneOf
+      params:
+        p: 1.0
+        transforms:
+        - name: Resize
+          params:
+            width: 1024
+            height: 1024
+            p: 0.5
+        - name: RandomResizedCrop
+          params:
+            width: 1024
+            height: 1024
+            scale: [0.6, 1.0]
+            p: 0.5
+    - name: Rotate
+      params:
+        limit: 10
+        p: 0.2
+    - name: HorizontalFlip
+      params:
+        p: 0.5
