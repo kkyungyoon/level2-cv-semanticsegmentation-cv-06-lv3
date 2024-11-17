@@ -137,8 +137,9 @@ class LREMetric(BaseMetric):
         # class_dice = {f'class_{cls}': dice_scores[cls].item() for cls in range(self.num_classes)}
 
 
-
-        classes, filename = zip(*[[x.split("_")[0], x.split("_")[-1]] for x in self.filename_and_class])
+        
+        # classes, filename = zip(*[[x.split("_")[0], x.split("_")[-1]] for x in self.filename_and_class])
+        classes, filename = zip(*[[x.split("_")[0], '_'.join(x.split('_')[2:])] for x in self.filename_and_class])
         image_name = [os.path.basename(f) for f in filename]
 
         df = pd.DataFrame({
