@@ -17,6 +17,7 @@ class XRayDataModule(BaseDataModule):
         self.augmentation_config = load_yaml_config(augmentation_config_path)
         self.seed = self.data_config['seed']
         self.image_size = self.data_config['image_size']
+        self.val_fold = int(self.data_config['val_fold'])
         super().__init__(self.data_config)
 
     def setup(self, stage: Optional[str] = None):
@@ -46,14 +47,16 @@ class XRayDataModule(BaseDataModule):
             image_path= train_data_path,
             label_path= train_label_path,
             is_train=True,
-            transforms=train_transforms
+            transforms=train_transforms,
+            val_fold=self.val_fold
         )
         
         self.val_dataset = XRayDataset(
             image_path= train_data_path,
             label_path= train_label_path,
             is_train=False,
-            transforms=test_transforms
+            transforms=test_transforms,
+            val_fold=self.val_fold
         )
 
         self.test_dataset = XRayInferenceDataset(
