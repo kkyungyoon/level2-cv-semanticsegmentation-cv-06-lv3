@@ -87,7 +87,7 @@ class SmpModule(pl.LightningModule):
 
         # 각 클래스에 대한 Dice score 기록
         for i, dice in enumerate(dices_per_class):
-            self.log(f'class_{i}_dice', dice.item(), on_epoch=True, prog_bar=False)
+            self.log(f'{IND2CLASS[i]}_dice', dice.item(), on_epoch=True, prog_bar=False)
 
         # 전체 평균 Dice 기록
         self.log('avg_dice_score', avg_dice, on_epoch=True, prog_bar=True)
