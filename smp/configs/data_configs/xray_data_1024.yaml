@@ -22,4 +22,5 @@ data:
     shuffle: false
 
 image_size: 1024
+val_fold: 2
 seed: 42
