@@ -62,7 +62,8 @@ class LoadXRayAnnotations(MMCV_LoadAnnotations):
             annotations = json.load(f)
         annotations = annotations["annotations"]
 
-        label_shape = results['img_shape'] + (len(self.CLASSES), )
+        # label_shape = results['img_shape'] + (len(self.CLASSES), )
+        label_shape = (2048,2048) + (len(self.CLASSES), )
         label = np.zeros(label_shape, dtype=np.uint8)
 
         for ann in annotations:
@@ -71,7 +72,8 @@ class LoadXRayAnnotations(MMCV_LoadAnnotations):
             points = np.array(ann["points"])
             
             # polygon 포맷을 dense한 mask 포맷으로 바꿉니다.
-            class_label = np.zeros(results['img_shape'], dtype=np.uint8)
+            # class_label = np.zeros(results['img_shape'], dtype=np.uint8)
+            class_label = np.zeros((2048,2048), dtype=np.uint8)
             cv2.fillPoly(class_label, [points], 1)
             label[..., class_ind] = class_label
         
