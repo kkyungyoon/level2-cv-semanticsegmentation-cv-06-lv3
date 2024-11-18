@@ -8,7 +8,7 @@ from sklearn.model_selection import GroupKFold
 from torch.utils.data import Dataset
 
 class XRayDataset(Dataset):
-    def __init__(self, image_path, label_path, is_train=True, transforms=None):
+    def __init__(self, image_path, label_path, is_train=True, transforms=None, val_fold=0):
 
         self.image_path = image_path
         self.label_path = label_path
@@ -64,18 +64,19 @@ class XRayDataset(Dataset):
         for i, (x, y) in enumerate(gkf.split(_filenames, ys, groups)):
             if is_train:
                 # 0번을 validation dataset으로 사용합니다.
-                if i == 0:
+                if i == val_fold:
                     continue
 
                 filenames += list(_filenames[y])
                 labelnames += list(_labelnames[y])
 
             else:
-                filenames = list(_filenames[y])
-                labelnames = list(_labelnames[y])
-
-                # skip i > 0
-                break
+                if i == val_fold:
+                    filenames = list(_filenames[y])
+                    labelnames = list(_labelnames[y])
+                    break
+                else:
+                    continue
 
         self.filenames = filenames
         self.labelnames = labelnames
