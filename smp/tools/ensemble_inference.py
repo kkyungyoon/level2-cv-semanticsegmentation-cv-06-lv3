@@ -85,6 +85,11 @@ def ensemble_masks_from_csv(csv_paths, height=2048, width=2048, method="majority
             class_id = row['class']
             rle = row['rle']
 
+            # rle 누락은 건너뜀
+            if pd.isna(rle):
+                print(image_name, class_id)
+                continue
+
             mask = decode_rle_to_mask(rle, height=height, width=width)
 
             if image_name not in ensemble_data:
