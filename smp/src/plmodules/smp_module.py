@@ -25,6 +25,10 @@ class SmpModule(pl.LightningModule):
         self.validation_outputs = []
         self.rles = []
         self.filename_and_class = []
+        self.use_gn = self.model_config.get("use_gn", False)
+
+        if self.use_gn:
+            self.model = self.replace_batchnorm_with_groupnorm(model=self.model)
 
     def forward(self, images, labels=None):
         return self.model(images, labels)
