@@ -1,10 +1,11 @@
 import argparse
-from omegaconf import OmegaConf
-import pandas as pd
-import numpy as np
-import os
-from tqdm import tqdm
 import datetime
+import os
+
+import numpy as np
+import pandas as pd
+from omegaconf import OmegaConf
+from tqdm import tqdm
 
 
 def parse_args():
@@ -37,7 +38,8 @@ def decode_rle_to_mask(rle, height=2048, width=2048):
     Decodes RLE string to a binary mask.
     """
     s = rle.split()
-    starts, lengths = [np.asarray(x, dtype=int) for x in (s[0:][::2], s[1:][::2])]
+    starts, lengths = [np.asarray(x, dtype=int)
+                       for x in (s[0:][::2], s[1:][::2])]
     starts -= 1
     ends = starts + lengths
     img = np.zeros(height * width, dtype=np.uint8)
@@ -126,7 +128,7 @@ def ensemble_and_save(
 def main(args):
     cfg = OmegaConf.load(args.config)
     csv_paths = list(cfg.csv_paths)
-    save_filename = str(cfg.save_filename) 
+    save_filename = str(cfg.save_filename)
     method = args.method
 
     save_dir = "./ensemble_results"
