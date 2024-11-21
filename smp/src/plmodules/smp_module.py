@@ -6,7 +6,9 @@ import numpy as np
 import pandas as pd
 import datetime
 
-from skimage import measure
+import torch.nn as nn
+
+#from skimage import measure
 #import pydensecrf.dcrf as dcrf
 #import pydensecrf.utils as utils
 
@@ -21,14 +23,18 @@ class SmpModule(pl.LightningModule):
         self.model_config = load_yaml_config(model_config_path)
         self.model = SmpModel(model_config_path=model_config_path)
         self.mode = self.model_config['interpolate']['mode']
+        self.sliding_window = self.model_config.get("sliding_window", False)
+
+        if self.sliding_window:
+            self.stride = self.model_config["sliding_window"]["stride"]
+            self.patch_size = self.model_config["sliding_window"]["patch_size"]
+
         self.use_crf = use_crf
         self.validation_outputs = []
         self.rles = []
         self.filename_and_class = []
-        self.use_gn = self.model_config.get("use_gn", False)
 
-        if self.use_gn:
-            self.model = self.replace_batchnorm_with_groupnorm(model=self.model)
+        self.model = self.replace_batchnorm_with_groupnorm(model=self.model)
 
     def forward(self, images, labels=None):
         return self.model(images, labels)
@@ -43,8 +49,13 @@ class SmpModule(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        images, labels = batch
-        outputs, loss = self.model(images, labels)
+
+        if not self.sliding_window:
+            images, labels = batch
+            outputs, loss = self.model(images, labels)
+
+        else:
+            outputs, loss = self._sliding_window_step(batch)
 
         # log
         self.log('val_loss', loss, prog_bar=True)
@@ -61,17 +72,20 @@ class SmpModule(pl.LightningModule):
         return dices
     
     def test_step(self, batch, batch_idx):
-        images, image_names = batch
-        outputs = self.model(images)
+        if not self.sliding_window:
+            images, image_names = batch
+            outputs = self.model(images)
 
-        outputs = F.interpolate(
-            outputs, 
-            size=(2048, 2048),
-            mode=self.mode        
-            )
+            outputs = F.interpolate(
+                outputs, 
+                size=(2048, 2048),
+                mode=self.mode        
+                )
+        else:
+            outputs = self._sliding_window_step(batch)
 
         outputs = torch.sigmoid(outputs)
-        outputs = (outputs > 0.5).detach().cpu().numpy()
+        outputs = (outputs > 0.3).detach().cpu().numpy()
 
         for output, image_name in zip(outputs, image_names):
             for c, segm in enumerate(output):
@@ -82,6 +96,57 @@ class SmpModule(pl.LightningModule):
                 )
 
         return
+    
+    def _sliding_window_step(self, batch, batch_idx):
+        images, labels = batch
+
+        # sliding window inference
+        stride = self.stride
+        patch_size = self.patch_size
+        batch_patches = []
+        batch_coords = []
+        batch_size = self.batch_size
+
+        _, _, H, W = images.shape  # 입력 이미지 크기 (Batch, Channels, Height, Width)
+        outputs_full = torch.zeros((images.size(0), self.num_classes, H, W)).to(images.device)
+
+        # 슬라이딩 윈도우로 이미지 나누기
+        for i in range(0, H - patch_size + 1, stride):
+            for j in range(0, W - patch_size + 1, stride):
+                patch = images[:, :, i:i + patch_size, j:j + patch_size]
+                batch_patches.append(patch)
+                batch_coords.append((i, j))
+
+                # 배치 크기에 도달하면 모델 추론
+                if len(batch_patches) == batch_size:
+                    batch_patches_tensor = torch.cat(batch_patches, dim=0)
+                    batch_outputs = self.model(batch_patches_tensor)  # 모델 예측
+                    for k, (x, y) in enumerate(batch_coords):
+                        outputs_full[:, :, x:x + patch_size, y:y + patch_size] += batch_outputs[k]
+                    batch_patches = []
+                    batch_coords = []
+
+        # 남은 패치에 대해 추론
+        if batch_patches:
+            batch_patches_tensor = torch.cat(batch_patches, dim=0)
+            batch_outputs = self.model(batch_patches_tensor)
+            for k, (x, y) in enumerate(batch_coords):
+                outputs_full[:, :, x:x + patch_size, y:y + patch_size] += batch_outputs[k]
+
+        # 패치 합성 후 평균값으로 정규화
+        norm_map = torch.zeros_like(outputs_full)
+        for i in range(0, H - patch_size + 1, stride):
+            for j in range(0, W - patch_size + 1, stride):
+                norm_map[:, :, i:i + patch_size, j:j + patch_size] += 1
+        outputs_full /= norm_map
+
+        # 레이블이 주어지면 손실 계산
+        if labels is not None:
+            loss = self.criterion(outputs_full, labels)
+            return outputs_full, loss
+
+        return outputs_full
+
     
     def on_validation_epoch_end(self):
         if len(self.validation_outputs) == 0:
@@ -161,7 +226,29 @@ class SmpModule(pl.LightningModule):
         else:
             return optimizer
 
+    def replace_batchnorm_with_groupnorm(self, model, default_num_groups=32):
+        """
+        모델 내 모든 BatchNorm2d를 GroupNorm으로 변환. 
+        num_channels에 따라 num_groups를 자동 조정.
         
+        Args:
+            model (nn.Module): 변환할 모델.
+            default_num_groups (int): 기본 그룹 수. 채널 수에 맞게 자동 조정.
+        """
+        for name, module in model.named_children():
+            if isinstance(module, nn.BatchNorm2d):
+                num_channels = module.num_features
+                # num_channels에 따라 num_groups를 자동으로 설정
+                num_groups = min(default_num_groups, num_channels)
+                if num_channels % num_groups != 0:  # 나누어떨어지지 않으면 그룹 수 조정
+                    num_groups = 1
+                group_norm = nn.GroupNorm(num_groups=num_groups, num_channels=num_channels)
+                setattr(model, name, group_norm)
+            else:
+                # 하위 모듈이 있을 경우 재귀적으로 교체
+                self.replace_batchnorm_with_groupnorm(module)
+        return model
+
     
     @staticmethod
     def dice_coef(y_true, y_pred, eps=1e-4):
@@ -184,47 +271,3 @@ class SmpModule(pl.LightningModule):
         runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
         runs[1::2] -= runs[::2]
         return ' '.join(str(x) for x in runs)
-    
-    # @staticmethod
-    # def apply_crf_to_multilabel(pred_mask, image, num_classes):
-    #     """
-    #     Multi-label CRF를 각 클래스별로 적용하는 함수
-    #     pred_mask: (H, W, num_classes) 크기의 예측 마스크 (확률 맵)
-    #     image: 원본 이미지, (H, W, 3) 크기
-    #     num_classes: 클래스 수
-    #     """
-    #     H, W = pred_mask.shape[:2]
-    #     pred_mask = torch.sigmoid(pred_mask).cpu().numpy()  # 예측 확률로 변환
-
-    #     refined_masks = []
-        
-    #     for c in range(num_classes):
-    #         prob_map = pred_mask[..., c]
-            
-    #         # CRF에 넣을 이미지는 (H, W, 3) 채널을 가져야 하므로 RGB 이미지를 사용
-    #         unary = -np.log(prob_map)  # 확률을 CRF의 에너지로 변환 (log)
-    #         unary = np.expand_dims(unary, axis=2)  # (H, W, 1)로 변환
-            
-    #         # CRF 객체 생성
-    #         d = dcrf.DenseCRF2D(W, H, 2)  # 2는 배경과 전경 (background, foreground)
-            
-    #         # RGB 이미지를 CRF의 컬러 에너지로 변환
-    #         image_rgb = np.moveaxis(image, -1, 0)  # (H, W, 3) -> (3, H, W)
-    #         image_rgb = np.expand_dims(image_rgb, axis=0)
-    #         image_rgb = image_rgb.astype(np.uint8)
-            
-    #         # Color (RGB) features (주변 픽셀과의 관계를 고려)
-    #         d.setUnaryEnergy(unary)
-    #         d.addPairwiseGaussian(sxy=3, compat=10)
-    #         d.addPairwiseBilateral(sxy=80, srgb=13, rgbim=image_rgb, compat=10)
-            
-    #         # CRF 추론
-    #         refined = d.inference(5)  # 5번 추론
-            
-    #         refined_mask = np.array(refined).reshape((H, W, 2))[:, :, 1]  # foreground mask
-    #         refined_masks.append(refined_mask)
-        
-    #     # multi-label mask 형태로 리턴
-    #     refined_masks = np.stack(refined_masks, axis=-1)
-        
-    #     return refined_masks
