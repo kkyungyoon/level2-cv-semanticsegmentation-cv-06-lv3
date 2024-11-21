@@ -7,3 +7,5 @@ __pycache__
 */wandb/
 */wandb_logs/*
 *.csv
+*.txt
+*/custom_checkpoint/*
