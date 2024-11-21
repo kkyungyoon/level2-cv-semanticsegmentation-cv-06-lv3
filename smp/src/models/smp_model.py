@@ -17,6 +17,8 @@ class SmpModel(nn.Module):
             **self.model_config["model"]
         )
 
+        self.mode = self.model_config['interpolate']['mode']
+
         # 손실 함수 설정
         self.loss_config = self.model_config.get("loss", {})
         self.criterion = self._get_loss_function(self.loss_config)
@@ -59,7 +61,7 @@ class SmpModel(nn.Module):
             output_h, output_w = outputs.size(-2), outputs.size(-1)
             mask_h, mask_w = labels.size(-2), labels.size(-1)
             if output_h != mask_h or output_w != mask_w:
-                outputs = F.interpolate(outputs, size=(mask_h, mask_w), mode="bilinear")
+                outputs = F.interpolate(outputs, size=(mask_h, mask_w), mode=self.mode)
             
             loss = self.criterion(outputs, labels)
             return outputs, loss

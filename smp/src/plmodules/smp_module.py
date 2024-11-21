@@ -6,18 +6,35 @@ import numpy as np
 import pandas as pd
 import datetime
 
+import torch.nn as nn
+
+#from skimage import measure
+#import pydensecrf.dcrf as dcrf
+#import pydensecrf.utils as utils
+
 from src.models.smp_model import SmpModel
 from src.utils.data_utils import load_yaml_config
 from src.utils.constants import IND2CLASS
 
 class SmpModule(pl.LightningModule):
-    def __init__(self, train_config_path, model_config_path):
+    def __init__(self, train_config_path, model_config_path, use_crf=False):
         super().__init__()
         self.train_config = load_yaml_config(train_config_path)
+        self.model_config = load_yaml_config(model_config_path)
         self.model = SmpModel(model_config_path=model_config_path)
+        self.mode = self.model_config['interpolate']['mode']
+        self.sliding_window = self.model_config.get("sliding_window", False)
+
+        if self.sliding_window:
+            self.stride = self.model_config["sliding_window"]["stride"]
+            self.patch_size = self.model_config["sliding_window"]["patch_size"]
+
+        self.use_crf = use_crf
         self.validation_outputs = []
         self.rles = []
         self.filename_and_class = []
+
+        self.model = self.replace_batchnorm_with_groupnorm(model=self.model)
 
     def forward(self, images, labels=None):
         return self.model(images, labels)
@@ -32,8 +49,13 @@ class SmpModule(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        images, labels = batch
-        outputs, loss = self.model(images, labels)
+
+        if not self.sliding_window:
+            images, labels = batch
+            outputs, loss = self.model(images, labels)
+
+        else:
+            outputs, loss = self._sliding_window_step(batch)
 
         # log
         self.log('val_loss', loss, prog_bar=True)
@@ -50,17 +72,20 @@ class SmpModule(pl.LightningModule):
         return dices
     
     def test_step(self, batch, batch_idx):
-        images, image_names = batch
-        outputs = self.model(images)
+        if not self.sliding_window:
+            images, image_names = batch
+            outputs = self.model(images)
 
-        outputs = F.interpolate(
-            outputs, 
-            size=(2048, 2048),
-            mode="bilinear"         
-            )
+            outputs = F.interpolate(
+                outputs, 
+                size=(2048, 2048),
+                mode=self.mode        
+                )
+        else:
+            outputs = self._sliding_window_step(batch)
 
         outputs = torch.sigmoid(outputs)
-        outputs = (outputs > 0.5).detach().cpu().numpy()
+        outputs = (outputs > 0.3).detach().cpu().numpy()
 
         for output, image_name in zip(outputs, image_names):
             for c, segm in enumerate(output):
@@ -71,6 +96,57 @@ class SmpModule(pl.LightningModule):
                 )
 
         return
+    
+    def _sliding_window_step(self, batch, batch_idx):
+        images, labels = batch
+
+        # sliding window inference
+        stride = self.stride
+        patch_size = self.patch_size
+        batch_patches = []
+        batch_coords = []
+        batch_size = self.batch_size
+
+        _, _, H, W = images.shape  # 입력 이미지 크기 (Batch, Channels, Height, Width)
+        outputs_full = torch.zeros((images.size(0), self.num_classes, H, W)).to(images.device)
+
+        # 슬라이딩 윈도우로 이미지 나누기
+        for i in range(0, H - patch_size + 1, stride):
+            for j in range(0, W - patch_size + 1, stride):
+                patch = images[:, :, i:i + patch_size, j:j + patch_size]
+                batch_patches.append(patch)
+                batch_coords.append((i, j))
+
+                # 배치 크기에 도달하면 모델 추론
+                if len(batch_patches) == batch_size:
+                    batch_patches_tensor = torch.cat(batch_patches, dim=0)
+                    batch_outputs = self.model(batch_patches_tensor)  # 모델 예측
+                    for k, (x, y) in enumerate(batch_coords):
+                        outputs_full[:, :, x:x + patch_size, y:y + patch_size] += batch_outputs[k]
+                    batch_patches = []
+                    batch_coords = []
+
+        # 남은 패치에 대해 추론
+        if batch_patches:
+            batch_patches_tensor = torch.cat(batch_patches, dim=0)
+            batch_outputs = self.model(batch_patches_tensor)
+            for k, (x, y) in enumerate(batch_coords):
+                outputs_full[:, :, x:x + patch_size, y:y + patch_size] += batch_outputs[k]
+
+        # 패치 합성 후 평균값으로 정규화
+        norm_map = torch.zeros_like(outputs_full)
+        for i in range(0, H - patch_size + 1, stride):
+            for j in range(0, W - patch_size + 1, stride):
+                norm_map[:, :, i:i + patch_size, j:j + patch_size] += 1
+        outputs_full /= norm_map
+
+        # 레이블이 주어지면 손실 계산
+        if labels is not None:
+            loss = self.criterion(outputs_full, labels)
+            return outputs_full, loss
+
+        return outputs_full
+
     
     def on_validation_epoch_end(self):
         if len(self.validation_outputs) == 0:
@@ -150,7 +226,29 @@ class SmpModule(pl.LightningModule):
         else:
             return optimizer
 
+    def replace_batchnorm_with_groupnorm(self, model, default_num_groups=32):
+        """
+        모델 내 모든 BatchNorm2d를 GroupNorm으로 변환. 
+        num_channels에 따라 num_groups를 자동 조정.
         
+        Args:
+            model (nn.Module): 변환할 모델.
+            default_num_groups (int): 기본 그룹 수. 채널 수에 맞게 자동 조정.
+        """
+        for name, module in model.named_children():
+            if isinstance(module, nn.BatchNorm2d):
+                num_channels = module.num_features
+                # num_channels에 따라 num_groups를 자동으로 설정
+                num_groups = min(default_num_groups, num_channels)
+                if num_channels % num_groups != 0:  # 나누어떨어지지 않으면 그룹 수 조정
+                    num_groups = 1
+                group_norm = nn.GroupNorm(num_groups=num_groups, num_channels=num_channels)
+                setattr(model, name, group_norm)
+            else:
+                # 하위 모듈이 있을 경우 재귀적으로 교체
+                self.replace_batchnorm_with_groupnorm(module)
+        return model
+
     
     @staticmethod
     def dice_coef(y_true, y_pred, eps=1e-4):
