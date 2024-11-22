@@ -9,7 +9,7 @@ from .fast_scnn import FastSCNN
 from .hrnet import HRNet
 from .icnet import ICNet
 from .mae import MAE
-from .mit import MixVisionTransformer
+from .mit import MixVisionTransformer, CustomMixVisionTransformer
 from .mobilenet_v2 import MobileNetV2
 from .mobilenet_v3 import MobileNetV3
 from .mscan import MSCAN
@@ -31,5 +31,5 @@ __all__ = [
     'VisionTransformer', 'SwinTransformer', 'MixVisionTransformer',
     'BiSeNetV1', 'BiSeNetV2', 'ICNet', 'TIMMBackbone', 'ERFNet', 'PCPVT',
     'SVT', 'STDCNet', 'STDCContextPathNet', 'BEiT', 'MAE', 'PIDNet', 'MSCAN',
-    'DDRNet', 'VPD'
+    'DDRNet', 'VPD', 'CustomMixVisionTransformer'
 ]
