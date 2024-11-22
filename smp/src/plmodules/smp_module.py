@@ -8,9 +8,11 @@ import datetime
 
 import torch.nn as nn
 
-#from skimage import measure
-#import pydensecrf.dcrf as dcrf
-#import pydensecrf.utils as utils
+from skimage.color import gray2rgb
+from skimage.color import rgb2gray
+
+import pydensecrf.densecrf as dcrf
+from pydensecrf.utils import unary_from_labels
 
 from src.models.smp_model import SmpModel
 from src.utils.data_utils import load_yaml_config
@@ -85,7 +87,11 @@ class SmpModule(pl.LightningModule):
             outputs = self._sliding_window_step(batch)
 
         outputs = torch.sigmoid(outputs)
-        outputs = (outputs > 0.3).detach().cpu().numpy()
+
+        if self.use_crf:
+            outputs = self.crf(mask_img=outputs)
+
+        outputs = (outputs > 0.5).detach().cpu().numpy()
 
         for output, image_name in zip(outputs, image_names):
             for c, segm in enumerate(output):
@@ -271,3 +277,38 @@ class SmpModule(pl.LightningModule):
         runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
         runs[1::2] -= runs[::2]
         return ' '.join(str(x) for x in runs)
+    
+
+    @staticmethod
+    def crf(image_size=(2048, 2048), mask_img=None):
+        
+        # Converting annotated image to RGB if it is Gray scale
+        if(len(mask_img.shape)<3):
+            mask_img = gray2rgb(mask_img)
+
+        # Converting the annotations RGB color to single 32 bit integer
+        annotated_label = mask_img[:,:,0] + (mask_img[:,:,1]<<8) + (mask_img[:,:,2]<<16)
+        
+        # Convert the 32bit integer color to 0,1, 2, ... labels.
+        colors, labels = np.unique(annotated_label, return_inverse=True)
+
+        n_labels = 29
+        
+        # Setting up the CRF model
+        d = dcrf.DenseCRF2D(image_size[1], image_size[0], n_labels)
+
+        # get unary potentials (neg log probability)
+        U = unary_from_labels(labels, n_labels, gt_prob=0.7, zero_unsure=False)
+        d.setUnaryEnergy(U)
+
+        # This adds the color-independent term, features are the locations only.
+        d.addPairwiseGaussian(sxy=(3, 3), compat=3, kernel=dcrf.DIAG_KERNEL,
+                        normalization=dcrf.NORMALIZE_SYMMETRIC)
+            
+        #Run Inference for 10 steps 
+        Q = d.inference(10)
+
+        # Find out the most probable class for each pixel.
+        MAP = np.argmax(Q, axis=0)
+
+        return MAP.reshape((image_size[0], image_size[1]))
