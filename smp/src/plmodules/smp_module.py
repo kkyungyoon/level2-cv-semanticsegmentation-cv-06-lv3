@@ -8,13 +8,16 @@ import datetime
 
 import torch.nn as nn
 
-#from skimage import measure
-#import pydensecrf.dcrf as dcrf
-#import pydensecrf.utils as utils
+from skimage.color import gray2rgb
+from skimage.color import rgb2gray
+
+import pydensecrf.densecrf as dcrf
+from pydensecrf.utils import unary_from_labels
 
 from src.models.smp_model import SmpModel
 from src.utils.data_utils import load_yaml_config
 from src.utils.constants import IND2CLASS
+from src.utils.custom_crf import DenseCRF
 
 class SmpModule(pl.LightningModule):
     def __init__(self, train_config_path, model_config_path, use_crf=False):
@@ -23,11 +26,13 @@ class SmpModule(pl.LightningModule):
         self.model_config = load_yaml_config(model_config_path)
         self.model = SmpModel(model_config_path=model_config_path)
         self.mode = self.model_config['interpolate']['mode']
-        self.sliding_window = self.model_config.get("sliding_window", False)
+        self.sliding_window = self.model_config["sliding_window"]["apply"]
 
         if self.sliding_window:
             self.stride = self.model_config["sliding_window"]["stride"]
             self.patch_size = self.model_config["sliding_window"]["patch_size"]
+            self.batch_size = self.model_config["sliding_window"]["batch_size"]
+            self.num_classes = 29
 
         self.use_crf = use_crf
         self.validation_outputs = []
@@ -55,6 +60,7 @@ class SmpModule(pl.LightningModule):
             outputs, loss = self.model(images, labels)
 
         else:
+            images, labels = batch
             outputs, loss = self._sliding_window_step(batch)
 
         # log
@@ -79,13 +85,16 @@ class SmpModule(pl.LightningModule):
             outputs = F.interpolate(
                 outputs, 
                 size=(2048, 2048),
-                mode=self.mode        
+                mode=self.mode,
+                align_corners=True
                 )
         else:
-            outputs = self._sliding_window_step(batch)
+            images, image_names = batch
+            outputs = self._sliding_window_step(images)
 
         outputs = torch.sigmoid(outputs)
-        outputs = (outputs > 0.3).detach().cpu().numpy()
+
+        outputs = (outputs > 0.5).detach().cpu().numpy()
 
         for output, image_name in zip(outputs, image_names):
             for c, segm in enumerate(output):
@@ -97,9 +106,13 @@ class SmpModule(pl.LightningModule):
 
         return
     
-    def _sliding_window_step(self, batch, batch_idx):
-        images, labels = batch
-
+    def _sliding_window_step(self, batch):
+        if len(batch) == 2:
+            images, labels = batch
+        else:
+            images = batch
+            labels = None
+    
         # sliding window inference
         stride = self.stride
         patch_size = self.patch_size
@@ -142,7 +155,7 @@ class SmpModule(pl.LightningModule):
 
         # 레이블이 주어지면 손실 계산
         if labels is not None:
-            loss = self.criterion(outputs_full, labels)
+            loss = self.model.criterion(outputs_full, labels)
             return outputs_full, loss
 
         return outputs_full
@@ -226,7 +239,7 @@ class SmpModule(pl.LightningModule):
         else:
             return optimizer
 
-    def replace_batchnorm_with_groupnorm(self, model, default_num_groups=32):
+    def replace_batchnorm_with_groupnorm(self, model, default_num_groups=16):
         """
         모델 내 모든 BatchNorm2d를 GroupNorm으로 변환. 
         num_channels에 따라 num_groups를 자동 조정.
