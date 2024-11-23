@@ -1,0 +1,12 @@
+# configs/loss_cfg/dice_bce.yaml
+
+loss:
+  use_different_loss: True
+  components:
+    - name: DiceLoss
+      args:
+        mode: multilabel
+        smooth: 0.0001
+      weight: 0.6
+    - name: BCEWithLogitsLoss
+      weight: 0.4

@@ -21,6 +21,7 @@ data:
     num_workers: 1
     shuffle: false
 
+# 동적으로 처리할 수 있다면 더 좋을 이미지 크기 설정
 image_size: 1024
-val_fold: 2
-seed: 42
+val_fold: 2  # 교차 검증에서 사용될 fold 수
+seed: 21  # 랜덤 시드 값

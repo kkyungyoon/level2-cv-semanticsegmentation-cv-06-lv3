@@ -12,37 +12,38 @@ from src.utils.seed_utils import set_seed
 
 
 class XRayDataModule(BaseDataModule):
-    def __init__(self, data_config_path: str, augmentation_config_path: str, seed: int=21):
-        self.data_config = load_yaml_config(data_config_path)
-        self.augmentation_config = load_yaml_config(augmentation_config_path)
-        self.seed = self.data_config['seed']
-        self.image_size = self.data_config['image_size']
-        self.val_fold = int(self.data_config['val_fold'])
-        super().__init__(self.data_config)
+    def __init__(self, config):
+        self.data_config = load_yaml_config(config["path"].get("data", None))
+        self.augmentation_config = load_yaml_config(config["path"].get("augmentation", None))
+        super().__init__(config)
 
     def setup(self, stage: Optional[str] = None):
         # set seed
-        set_seed(self.seed)
+        set_seed(self.data_config.get("seed", 21))
 
-        # load datasets
-        if self.augmentation_config["augmentation"]["use_augmentation"]:
+        # setting image_size & validation fold number
+        self.image_size = self.data_config.get("image_size", 512)
+        self.val_fold = self.data_config.get("val_fold", 0)
+
+        # load train transform
+        if self.augmentation_config["augmentation"].get("enabled", False):
             train_transforms = self._get_augmentation_transforms()
-
         else:
             train_transforms = A.Compose(
                 [A.Resize(int(self.image_size), int(self.image_size))],
             )
 
+        # load test transform
         test_transforms = A.Compose(
             [A.Resize(int(self.image_size), int(self.image_size))],
         )
 
-        self.collate_fn = None
+        # get data folder path from configs
+        train_data_path = self.data_config["data"].get("train_data_path", "")
+        train_label_path = self.data_config["data"].get("train_label_path", "")
+        test_data_path = self.data_config["data"].get("test_data_path", "")
 
-        train_data_path = self.config["data"]["train_data_path"]
-        train_label_path = self.config["data"]["train_label_path"]
-        test_data_path = self.config["data"]["test_data_path"]
-
+        # define train dataset
         self.train_dataset = XRayDataset(
             image_path= train_data_path,
             label_path= train_label_path,
@@ -51,6 +52,7 @@ class XRayDataModule(BaseDataModule):
             val_fold=self.val_fold
         )
         
+        # define val dataset
         self.val_dataset = XRayDataset(
             image_path= train_data_path,
             label_path= train_label_path,
@@ -59,6 +61,7 @@ class XRayDataModule(BaseDataModule):
             val_fold=self.val_fold
         )
 
+        # define test dataset
         self.test_dataset = XRayInferenceDataset(
             image_path= test_data_path,
             transforms=test_transforms
@@ -99,7 +102,7 @@ class XRayDataModule(BaseDataModule):
         for transform_config in self.augmentation_config["augmentation"]["transforms"]:
             transform_name = transform_config["name"]
             
-            # TODO Resize를 RandomCrop과 병행할지 결정해보기
+            # OneOf
             if transform_name == "OneOf":
                 # OneOf 변환을 따로 처리
                 sub_transforms = []
@@ -112,10 +115,8 @@ class XRayDataModule(BaseDataModule):
                     sub_transforms,
                     p=transform_config["params"]["p"]
                     ))
-
                 
-                
-                
+            # SomeOf
             elif transform_name == "SomeOf":
                 # OneOf 변환을 따로 처리
                 sub_transforms = []

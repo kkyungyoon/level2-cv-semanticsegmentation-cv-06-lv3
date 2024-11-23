@@ -1,6 +1,6 @@
 # configs/augmentation_configs/base_augmentation.yaml
 augmentation:
-  use_augmentation: true
+  enabled: true
   transforms:
     - name: Resize
       params:

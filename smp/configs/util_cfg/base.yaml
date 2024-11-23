@@ -1,0 +1,25 @@
+# configs/util_cfg/base.yaml
+
+# interpolation method
+# read F.interpolate method args (document)
+interpolation:
+  enabled: False # default: bilinear
+  mode: bilinear
+
+# sliding window
+# if you use this option, you should set your val, test image_size = train image_size * 2
+sliding_window:
+  enabled: False # default: infer to the same size as train image_size
+  stride: 512
+  patch_size: 1024
+  batch_size: 2
+  notes: "stride는 patch_size/2 이하로 설정하는 것이 권장됨."
+
+# crf postprocessing
+crf:
+  enabled: False # default: false
+  notes: "crf postprocessing (background vs. 1 class)"
+
+# auto mixed preicision bf-16
+amp:
+  enabled: False # default: false

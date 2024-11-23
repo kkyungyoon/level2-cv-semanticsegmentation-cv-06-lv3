@@ -8,38 +8,49 @@ import datetime
 
 import torch.nn as nn
 
-from skimage.color import gray2rgb
-from skimage.color import rgb2gray
-
-import pydensecrf.densecrf as dcrf
-from pydensecrf.utils import unary_from_labels
-
 from src.models.smp_model import SmpModel
 from src.utils.data_utils import load_yaml_config
 from src.utils.constants import IND2CLASS
-from src.utils.custom_crf import DenseCRF
 
 class SmpModule(pl.LightningModule):
-    def __init__(self, train_config_path, model_config_path, use_crf=False):
+    def __init__(self, config):
         super().__init__()
-        self.train_config = load_yaml_config(train_config_path)
-        self.model_config = load_yaml_config(model_config_path)
-        self.model = SmpModel(model_config_path=model_config_path)
-        self.mode = self.model_config['interpolate']['mode']
-        self.sliding_window = self.model_config["sliding_window"]["apply"]
-
-        if self.sliding_window:
-            self.stride = self.model_config["sliding_window"]["stride"]
-            self.patch_size = self.model_config["sliding_window"]["patch_size"]
-            self.batch_size = self.model_config["sliding_window"]["batch_size"]
-            self.num_classes = 29
-
-        self.use_crf = use_crf
+        self.config = config
+        self.model = SmpModel(config=config)
+        
         self.validation_outputs = []
         self.rles = []
         self.filename_and_class = []
 
+        self.setup()
+
+    def setup(self):
+        # load config files
+        self.train_config = load_yaml_config(self.config["path"].get("train", ""))
+        self.util_config = load_yaml_config(self.config["path"].get("util", ""))
+
+        # interpolation 설정 적용
+        if "interpolation" in self.util_config and self.util_config["interpolation"].get("enabled", False):
+            self.mode = self.util_config["interpolation"].get("mode", "bilinear")  # 기본값 bilinear
+        else:
+            self.mode = "bilinear"  # interpolation이 비활성화된 경우 기본값
+
+        # sliding window 설정 적용
+        if "sliding_window" in self.util_config and self.util_config["sliding_window"].get("enabled", False):
+            self.stride = self.util_config["sliding_window"].get("stride", 512)  # 기본값 512
+            self.patch_size = self.util_config["sliding_window"].get("patch_size", 1024)  # 기본값 1024
+            self.batch_size = self.util_config["sliding_window"].get("batch_size", 1)  # 기본값 1
+            self.num_classes = self.util_config.get("num_classes", 29)  # 기본값 29
+        else:
+            self.sliding_window = False
+
+        # crf 설정 적용
+        self.crf = self.util_config["crf"].get("enabled", False)
+
+        # batchnorm to groupnorm
         self.model = self.replace_batchnorm_with_groupnorm(model=self.model)
+
+    
 
     def forward(self, images, labels=None):
         return self.model(images, labels)
@@ -199,7 +210,7 @@ class SmpModule(pl.LightningModule):
         })
 
         current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        df.to_csv(f"./logs/{self.train_config['logger']['name']}_{current_time}.csv", index=False)
+        df.to_csv(f"./logs/{self.config.get("filename", "")}_{current_time}.csv", index=False)
 
         return df
 

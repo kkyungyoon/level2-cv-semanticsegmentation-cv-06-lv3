@@ -12,7 +12,7 @@ def _get_callbacks(config, logger_config):
             ModelCheckpoint(
                 **config["model_checkpoint_params"],
                 dirpath=f"./logs/{logger_config['name']}/checkpoints/",
-                filename="{epoch:02d}-{val_loss:.2f}",
+                filename="{epoch:02d}-{avg_dice_score:.3f}",
             )
         )
 
