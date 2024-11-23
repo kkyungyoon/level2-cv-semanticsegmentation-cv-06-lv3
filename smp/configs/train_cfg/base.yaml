@@ -21,16 +21,18 @@ trainer:
   devices: 1
 
 callbacks:
-  earlystopping: True
-  earlystopping_params:
-    monitor: avg_dice_score
-    patience: 5
-    mode: max
-  model_checkpoint: True
-  model_checkpoint_params:
-    monitor: avg_dice_score
-    save_top_k: 3
-    mode: max
+  earlystopping:
+    enabled: True
+    params:
+      monitor: avg_dice_score
+      patience: 5
+      mode: max
+  model_checkpoint:
+    enabled: True
+    params:
+      monitor: avg_dice_score
+      save_top_k: 3
+      mode: max
 
 logger:
   tensorboard: True

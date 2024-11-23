@@ -10,22 +10,16 @@ def main(config_path, weights):
     config = load_yaml_config(config_path=config_path)
     print(f"Completed!")
 
-    aug_path = config["path"]["augmentation"]
-    data_path = config["path"]["data"]
-    model_path = config["path"]["model"]
+    # load datamodule
+    data_module = XRayDataModule(config=config)
 
-    data_module = XRayDataModule(
-        data_config_path=data_path,
-        augmentation_config_path=aug_path
-    )
-
+    # setup datamodule
     data_module.setup()
 
-    model = SmpModule(
-        train_config_path=config_path,
-        model_config_path=model_path,
-    )
+    # load model
+    model = SmpModule(config=config)
 
+    # load trainer
     trainer = pl.Trainer(
         accelerator='gpu',
     )
@@ -38,7 +32,7 @@ def main(config_path, weights):
     
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train a model with PyTorch Lightning")
+    parser = argparse.ArgumentParser(description="Inference a model with PyTorch Lightning")
     parser.add_argument(
         "--config", type=str, required=True, help="Path to the config file"
     )
