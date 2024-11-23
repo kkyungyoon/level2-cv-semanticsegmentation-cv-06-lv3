@@ -17,6 +17,7 @@ from pydensecrf.utils import unary_from_labels
 from src.models.smp_model import SmpModel
 from src.utils.data_utils import load_yaml_config
 from src.utils.constants import IND2CLASS
+from src.utils.custom_crf import DenseCRF
 
 class SmpModule(pl.LightningModule):
     def __init__(self, train_config_path, model_config_path, use_crf=False):
@@ -25,11 +26,13 @@ class SmpModule(pl.LightningModule):
         self.model_config = load_yaml_config(model_config_path)
         self.model = SmpModel(model_config_path=model_config_path)
         self.mode = self.model_config['interpolate']['mode']
-        self.sliding_window = self.model_config.get("sliding_window", False)
+        self.sliding_window = self.model_config["sliding_window"]["apply"]
 
         if self.sliding_window:
             self.stride = self.model_config["sliding_window"]["stride"]
             self.patch_size = self.model_config["sliding_window"]["patch_size"]
+            self.batch_size = self.model_config["sliding_window"]["batch_size"]
+            self.num_classes = 29
 
         self.use_crf = use_crf
         self.validation_outputs = []
@@ -57,6 +60,7 @@ class SmpModule(pl.LightningModule):
             outputs, loss = self.model(images, labels)
 
         else:
+            images, labels = batch
             outputs, loss = self._sliding_window_step(batch)
 
         # log
@@ -81,15 +85,14 @@ class SmpModule(pl.LightningModule):
             outputs = F.interpolate(
                 outputs, 
                 size=(2048, 2048),
-                mode=self.mode        
+                mode=self.mode,
+                align_corners=True
                 )
         else:
-            outputs = self._sliding_window_step(batch)
+            images, image_names = batch
+            outputs = self._sliding_window_step(images)
 
         outputs = torch.sigmoid(outputs)
-
-        if self.use_crf:
-            outputs = self.crf(mask_img=outputs)
 
         outputs = (outputs > 0.5).detach().cpu().numpy()
 
@@ -103,9 +106,13 @@ class SmpModule(pl.LightningModule):
 
         return
     
-    def _sliding_window_step(self, batch, batch_idx):
-        images, labels = batch
-
+    def _sliding_window_step(self, batch):
+        if len(batch) == 2:
+            images, labels = batch
+        else:
+            images = batch
+            labels = None
+    
         # sliding window inference
         stride = self.stride
         patch_size = self.patch_size
@@ -148,7 +155,7 @@ class SmpModule(pl.LightningModule):
 
         # 레이블이 주어지면 손실 계산
         if labels is not None:
-            loss = self.criterion(outputs_full, labels)
+            loss = self.model.criterion(outputs_full, labels)
             return outputs_full, loss
 
         return outputs_full
@@ -232,7 +239,7 @@ class SmpModule(pl.LightningModule):
         else:
             return optimizer
 
-    def replace_batchnorm_with_groupnorm(self, model, default_num_groups=32):
+    def replace_batchnorm_with_groupnorm(self, model, default_num_groups=16):
         """
         모델 내 모든 BatchNorm2d를 GroupNorm으로 변환. 
         num_channels에 따라 num_groups를 자동 조정.
@@ -277,38 +284,3 @@ class SmpModule(pl.LightningModule):
         runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
         runs[1::2] -= runs[::2]
         return ' '.join(str(x) for x in runs)
-    
-
-    @staticmethod
-    def crf(image_size=(2048, 2048), mask_img=None):
-        
-        # Converting annotated image to RGB if it is Gray scale
-        if(len(mask_img.shape)<3):
-            mask_img = gray2rgb(mask_img)
-
-        # Converting the annotations RGB color to single 32 bit integer
-        annotated_label = mask_img[:,:,0] + (mask_img[:,:,1]<<8) + (mask_img[:,:,2]<<16)
-        
-        # Convert the 32bit integer color to 0,1, 2, ... labels.
-        colors, labels = np.unique(annotated_label, return_inverse=True)
-
-        n_labels = 29
-        
-        # Setting up the CRF model
-        d = dcrf.DenseCRF2D(image_size[1], image_size[0], n_labels)
-
-        # get unary potentials (neg log probability)
-        U = unary_from_labels(labels, n_labels, gt_prob=0.7, zero_unsure=False)
-        d.setUnaryEnergy(U)
-
-        # This adds the color-independent term, features are the locations only.
-        d.addPairwiseGaussian(sxy=(3, 3), compat=3, kernel=dcrf.DIAG_KERNEL,
-                        normalization=dcrf.NORMALIZE_SYMMETRIC)
-            
-        #Run Inference for 10 steps 
-        Q = d.inference(10)
-
-        # Find out the most probable class for each pixel.
-        MAP = np.argmax(Q, axis=0)
-
-        return MAP.reshape((image_size[0], image_size[1]))
