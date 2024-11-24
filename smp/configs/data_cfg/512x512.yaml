@@ -5,16 +5,16 @@ data:
   test_data_path: /data/ephemeral/data/test/DCM
   pin_memory: true
   train:
-    batch_size: 2
-    num_workers: 2
+    batch_size: 8
+    num_workers: 7
     shuffle: true
   val:
-    batch_size: 2
-    num_workers: 2
+    batch_size: 8
+    num_workers: 7
     shuffle: false
   test:
-    batch_size: 2
-    num_workers: 2
+    batch_size: 8
+    num_workers: 7
     shuffle: false
   predict:
     batch_size: 1
@@ -22,6 +22,6 @@ data:
     shuffle: false
 
 # 동적으로 처리할 수 있다면 더 좋을 이미지 크기 설정
-image_size: 1024
+image_size: 512
 val_fold: 0  # 교차 검증에서 사용될 fold 수
 seed: 21  # 랜덤 시드 값
