@@ -15,7 +15,7 @@ from .mobilenet_v3 import MobileNetV3
 from .mscan import MSCAN
 from .pidnet import PIDNet
 from .resnest import ResNeSt
-from .resnet import ResNet, ResNetV1c, ResNetV1d
+from .resnet import ResNet, ResNetV1c, ResNetV1d, CustomResNet, CustomResNetV1c, CustomResNetV1d
 from .resnext import ResNeXt
 from .stdc import STDCContextPathNet, STDCNet
 from .swin import SwinTransformer
@@ -31,5 +31,5 @@ __all__ = [
     'VisionTransformer', 'SwinTransformer', 'MixVisionTransformer',
     'BiSeNetV1', 'BiSeNetV2', 'ICNet', 'TIMMBackbone', 'ERFNet', 'PCPVT',
     'SVT', 'STDCNet', 'STDCContextPathNet', 'BEiT', 'MAE', 'PIDNet', 'MSCAN',
-    'DDRNet', 'VPD', 'CustomMixVisionTransformer'
+    'DDRNet', 'VPD', 'CustomMixVisionTransformer', 'CustomResNet', 'CustomResNetV1c', 'CustomResNetV1d'
 ]
