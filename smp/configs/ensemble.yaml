@@ -1,6 +1,11 @@
+# this is config file for ensemble_inference
+
+# csv file paths for ensemble
 csv_paths: [
-  '/data/ephemeral/hbis/logs/upernet_efficientnet-b7_1024.csv',
-  '/data/ephemeral/hbis/logs/segformer_1024.csv',
+  'path1',
+  'path2',
+  'path3',
 ]
 
+# ensemble result csv filename ({save_filename}_{datetime}.csv)
 save_filename: test

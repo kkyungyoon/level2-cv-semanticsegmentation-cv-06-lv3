@@ -1,4 +1,4 @@
-# configs/model_cfg/unetplusplus_efficientnet-b7.yaml
+# configs/model_cfg/unetplusplus/unetplusplus_efficientnet-b7.yaml
 
 model:
   arch: "UnetPlusPlus"
@@ -9,6 +9,8 @@ model:
 
 metadata:
   description: "EfficientNet 기반의 UnetPlusPlus 모델"
+  image_size: "1024x1024"
+  batch_size: "2"
   version: "1.0"
   author: "andantecode"
   date: "2024-11-23"

@@ -1,4 +1,4 @@
-# configs/data_cfg/1024x1024.yaml
+# configs/data_cfg/2048x2048.yaml
 
 # notes: If you want to increase the learning resolution, \
 #      : you must also adjust the resize of the augmentation.
@@ -9,16 +9,16 @@ data:
   test_data_path: /data/ephemeral/data/test/DCM
   pin_memory: true
   train:
-    batch_size: 2
-    num_workers: 2
+    batch_size: 1
+    num_workers: 1
     shuffle: true
   val:
-    batch_size: 2
-    num_workers: 2
+    batch_size: 1
+    num_workers: 1
     shuffle: false
   test:
-    batch_size: 2
-    num_workers: 2
+    batch_size: 1
+    num_workers: 1
     shuffle: false
   predict:
     batch_size: 1
@@ -27,6 +27,6 @@ data:
 
 # 동적으로 처리할 수 있다면 더 좋을 이미지 크기 설정
 # 기본적으로 validation, test resize 크기
-image_size: 1024
+image_size: 2048
 val_fold: 0  # 교차 검증에서 사용될 fold 수
 seed: 21  # 랜덤 시드 값

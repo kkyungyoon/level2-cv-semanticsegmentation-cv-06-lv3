@@ -1,4 +1,5 @@
-# configs/augmentation_configs/base_augmentation.yaml
+# configs/aug_cfg/geometric/base.yaml
+
 augmentation:
   enabled: true
   transforms:
