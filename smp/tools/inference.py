@@ -37,7 +37,7 @@ if __name__ == "__main__":
         "--config", type=str, required=True, help="Path to the config file"
     )
     parser.add_argument(
-        "--weights", type=str, required=True, help="Path to the weights"
+        "--checkpoint", type=str, required=True, help="Path to a checkpoint file"
     )
     args = parser.parse_args()
     main(args.config, args.weights)
