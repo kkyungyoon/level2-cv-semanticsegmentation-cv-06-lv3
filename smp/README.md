@@ -7,6 +7,7 @@
 > Segmentation models for Handbone XRay Datasets
 
 ### 📋 Table of content
+---
  1. [Installation](#installation)
  2. [Quick start](#start)
  3. [Tools](#tools)
@@ -15,12 +16,13 @@
     2. [Augmentation](#augmentation)
     3. [Image size](#imagesize)
  5. [Results](#results)
- 6. [Contributors](#contributors)
+ 6. [Appendix](#appendix)
+ 7. [Contributors](#contributors)
 
 
 
 ### 🛠 Installation <a name="installation"></a>
-
+---
 #### Clone git repository
 ```bash
 git clone https://github.com/boostcampaitech7/level2-cv-semanticsegmentation-cv-06-lv3.git
@@ -37,7 +39,7 @@ pip install -r requirements.txt
 ```
 
 ### ⏳ Quick start <a name="start"></a>
-
+---
 #### 1. Create your configuration file
 
 ##### Augmentation Configuration
@@ -51,7 +53,7 @@ Configure options like the interpolation method, sliding window, and CRF (Condit
 Configure the loss functions supported by the SMP module.</br>
 (Refer to the [SMP documentation on losses](https://smp.readthedocs.io/en/latest/losses.html) for details.)
 ##### Model Configuration
-Define the model architecture using the available SMP models.
+Define the model architecture using the available SMP models.</br>
 (For more information on available models, check the [SMP model documentation](https://smp.readthedocs.io/en/latest/models.html).)
 ##### Training Configuration
 Set up the `optimizer`, `scheduler`, and `logger` according to your training needs.
@@ -65,7 +67,7 @@ python tools/train.py --config={path to total config}
 ```
 
 ### 🛠️ Tools <a name="tools"></a>
-
+---
 #### Training
 ```bash
 python tools/train.py --config={path to total config} --checkpoint={path to a checkpoint file} (optional)
@@ -73,8 +75,7 @@ python tools/train.py --config={path to total config} --checkpoint={path to a ch
 
 #### Inference
 ```bash
-python tools/inference.py --config={path to total config}
---checkpoint={path to a checkpoint file}
+python tools/inference.py --config={path to total config} --checkpoint={path to a checkpoint file}
 ```
 
 #### Validation
@@ -83,7 +84,7 @@ python tools/validation.py --config={path to total config} --checkpoint={path to
 ```
 
 ### 🧠 Experiments <a name="experiments"></a>
-
+---
 #### 🤖 Models <a name="models"></a>
  - Unet [[paper](https://arxiv.org/abs/1505.04597)] [[docs](https://smp.readthedocs.io/en/latest/models.html#unet)]
  - Unet++ [[paper](https://arxiv.org/pdf/1807.10165.pdf)] [[docs](https://smp.readthedocs.io/en/latest/models.html#id2)]
@@ -133,13 +134,17 @@ Experiments with changing the resolution of the training data to `512x512`, `102
 
 
 ### 📊 Results <a name="results"></a>
+---
 
 
+
+### 📎 Appendix <a name="appendix"></a>
+---
 
 
 
 ### 👥 Contributors <a name="contributors"></a>
-
+---
 <div align="center">
 <table>
   <tr>
