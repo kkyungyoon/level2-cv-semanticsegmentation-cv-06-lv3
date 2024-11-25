@@ -2,36 +2,67 @@ import segmentation_models_pytorch as smp
 from torch import nn
 import torch.nn.functional as F
 
-from src.losses.combined_loss import CombinedLoss
 from src.utils.data_utils import load_yaml_config
 
 class SmpModel(nn.Module):
-    def __init__(self, model_config_path: str):
+    def __init__(self, config):
         super(SmpModel, self).__init__()
 
-        # 모델 구성 로드
-        self.model_config = load_yaml_config(model_config_path)
+        # load config files
+        self.model_config = load_yaml_config(config["path"].get("model", ""))
+        self.loss_config = load_yaml_config(config["path"].get("loss", ""))
+        self.util_config = load_yaml_config(config["path"].get("util", ""))
 
-        # 모델 생성
+        # create model (segementation models with pytorch)
         self.model = smp.create_model(
             **self.model_config["model"]
         )
 
-        self.mode = self.model_config['interpolate']['mode']
+        if "interpolation" in self.util_config and self.util_config["interpolation"].get("enabled", False):
+            self.mode = self.util_config["interpolation"].get("mode", "bilinear")  # 기본값 bilinear
+        else:
+            self.mode = "bilinear"  # interpolation이 비활성화된 경우 기본값
 
         # 손실 함수 설정
-        self.loss_config = self.model_config.get("loss", {})
+        self.loss_config = self.loss_config.get("loss", {})
         self.criterion = self._get_loss_function(self.loss_config)
     
     def _get_loss_function(self, loss_config):
         """
         손실 함수 생성 및 반환.
-        loss_config에서 손실 함수의 이름과 파라미터를 받아서 적절한 손실 함수를 반환.
+        loss_config에서 손실 함수의 이름과 파라미터를 받아 적절한 손실 함수를 반환.
+        여러 손실 함수를 조합하여 사용하는 경우도 처리.
         """
-        loss_name = loss_config.get("name", "BCEWithLogitsLoss")  # 기본값은 BCE
-        loss_args = loss_config.get("args", {})
+        use_different_loss = loss_config.get("use_different_loss", False)
+        
+        if not use_different_loss:  # 단일 손실 함수 사용
+            loss_name = loss_config.get("name", "BCEWithLogitsLoss")  # 기본값
+            loss_args = loss_config.get("args", {})
+            return self._create_single_loss(loss_name, loss_args)
+        
+        # 여러 손실 함수 조합
+        components = loss_config.get("components", [])
+        if not components:
+            raise ValueError("`components`가 비어 있습니다. 손실 함수를 하나 이상 정의하세요.")
+        
+        loss_functions = []
+        weights = []
+        
+        for component in components:
+            loss_name = component.get("name")
+            loss_args = component.get("args", {})
+            weight = component.get("weight", 1.0)  # 기본 가중치
+            
+            loss_fn = self._create_single_loss(loss_name, loss_args)
+            loss_functions.append((loss_fn, weight))
+        
+        # 조합된 손실 함수 반환
+        return self._combine_loss_functions(loss_functions)
 
-        # JaccardLoss나 다른 손실 함수들이 segmentation_models_pytorch에 정의되어 있을 경우
+    def _create_single_loss(self, loss_name, loss_args):
+        """
+        단일 손실 함수 생성.
+        """
         if loss_name == "JaccardLoss":
             return smp.losses.JaccardLoss(**loss_args)
         elif loss_name == "BCEWithLogitsLoss":
@@ -46,10 +77,21 @@ class SmpModel(nn.Module):
             return smp.losses.LovaszLoss(**loss_args)
         elif loss_name == "SoftBCEWithLogitsLoss":
             return smp.losses.SoftBCEWithLogitsLoss(**loss_args)
-        elif loss_name == "CombinedLoss":
-            return CombinedLoss(**loss_args)
         else:
             raise ValueError(f"Unknown loss function: {loss_name}")
+
+    def _combine_loss_functions(self, loss_functions):
+        """
+        여러 손실 함수를 조합하여 단일 손실 함수로 반환.
+        """
+        def combined_loss(y_pred, y_true):
+            total_loss = 0.0
+            for loss_fn, weight in loss_functions:
+                total_loss += weight * loss_fn(y_pred, y_true)
+            return total_loss
+        
+        return combined_loss
+
     
     def forward(self, images, labels=None):
         # 이미지에 대한 예측 출력

@@ -2,11 +2,15 @@ from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
 
 def _get_logger(config):
     logger = []
-    if config["use_tensorboard"]:
+    if config.get("tensorboard", False):
         logger.append(
-            TensorBoardLogger(f'./logs/{config["name"]}')
+            TensorBoardLogger(
+                save_dir=f'./logs',
+                name=config["project"],
+                version=config["name"]
+                )
         )
-    if config["use_wandb"]:
+    if config.get("wandb", False):
         logger.append(
             WandbLogger(
                 project=config["project"],

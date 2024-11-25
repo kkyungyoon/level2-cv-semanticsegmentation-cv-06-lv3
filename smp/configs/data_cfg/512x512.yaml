@@ -1,4 +1,5 @@
-# configs/data_configs/xray_data.yaml
+# configs/data_cfg/512x512.yaml
+
 data:
   train_data_path: /data/ephemeral/data/train/DCM
   train_label_path: /data/ephemeral/data/train/outputs_json
@@ -6,21 +7,23 @@ data:
   pin_memory: true
   train:
     batch_size: 8
-    num_workers: 8
+    num_workers: 7
     shuffle: true
   val:
     batch_size: 8
-    num_workers: 4
+    num_workers: 7
     shuffle: false
   test:
     batch_size: 8
-    num_workers: 4
+    num_workers: 7
     shuffle: false
   predict:
     batch_size: 1
-    num_workers: 4
+    num_workers: 1
     shuffle: false
 
+# 동적으로 처리할 수 있다면 더 좋을 이미지 크기 설정
+# 기본적으로 validation, test resize 크기
 image_size: 512
-val_fold: 2
-seed: 42
+val_fold: 0  # 교차 검증에서 사용될 fold 수
+seed: 21  # 랜덤 시드 값
