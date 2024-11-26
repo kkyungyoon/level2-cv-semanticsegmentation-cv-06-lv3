@@ -14,7 +14,7 @@ model = dict(
     # pretrained=checkpoint,
     backbone=dict(
         type='VisionTransformer',
-        img_size=(512, 512),
+        img_size=(224, 224),
         patch_size=16,
         in_channels=3,
         embed_dims=768,
@@ -38,7 +38,9 @@ model = dict(
         embed_dims=768,
         dropout_ratio=0.0,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+            type='DiceLoss', use_sigmoid=True, loss_weight=1.0),
     ),
-    test_cfg=dict(mode='slide', crop_size=(512, 512), stride=(480, 480)),
+    test_cfg=dict(mode='whole', 
+                #   crop_size=(512, 512), stride=(480, 480)
+                  ),
 )
