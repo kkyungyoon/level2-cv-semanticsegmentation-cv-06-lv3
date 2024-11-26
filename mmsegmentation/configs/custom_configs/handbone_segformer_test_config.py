@@ -55,7 +55,7 @@ test_pipeline = [
 
 
 dataset_type = 'XRayDataset'
-data_root = '/data/ephemeral/home/data'
+data_root = '/data/ephemeral/home/level2-cv-semanticsegmentation-cv-06-lv3/data'
 
 test_dataloader = dict(
     batch_size=1,
@@ -66,7 +66,7 @@ test_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         data_prefix=dict(
-            img_path='fold_1/images',
+            img_path='fold_test/images',
             #img_path='fold_test/images',
             seg_map_path=''),
         pipeline=test_pipeline))

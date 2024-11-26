@@ -1,10 +1,12 @@
-_base_ = ['./handbone_segformer_config2.py']
-
-# checkpoint = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/segformer/mit_b5_20220624-658746d9.pth'  # noqa
+_base_ = ['./handbone_segformer_test_config.py']
 
 model = dict(
     backbone=dict(
-        # init_cfg=dict(type='Pretrained', checkpoint=checkpoint),
         embed_dims=64,
-        num_layers=[3, 6, 40, 3]),
-    decode_head=dict(in_channels=[64, 128, 320, 512]))
+        # num_layers=[3, 6, 40, 3]), #mit-b5
+        # num_layers=[3, 4, 6, 3]  # mit-b2 설정
+    ),
+    decode_head=dict(
+        in_channels=[64, 128, 320, 512]  # Decode head 입력 채널
+    )
+)
