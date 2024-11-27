@@ -2537,3 +2537,129 @@ class RandomDepthMix(BaseTransform):
 
         results['img'] = img
         return results
+
+
+@TRANSFORMS.register_module()
+class SingleCropMixUp(BaseTransform):
+    def __init__(self, alpha=0.5, padding=10, min_crop_size=50, num_insertions=(2, 5)):
+        """
+        Args:
+            alpha (float): MixUp 비율을 결정하는 파라미터.
+            padding (int): 크롭 영역에 추가할 패딩 픽셀 수.
+            min_crop_size (int): 크롭 크기의 최소값.
+            num_insertions (tuple): 원본 이미지에 삽입할 MixUp된 크롭의 최소 및 최대 횟수.
+        """
+        super().__init__()
+        self.alpha = alpha
+        self.padding = padding
+        self.min_crop_size = min_crop_size
+        self.num_insertions = num_insertions  # (최소 삽입 횟수, 최대 삽입 횟수)
+        # 클래스 인덱스 매핑 (LoadXRayAnnotations 클래스의 CLASS2IND 참고)
+        self.class2ind = {
+            'Trapezium': 19,
+            'Pisiform': 26,
+            'Hamate': 21,
+            'Lunate': 24
+        }
+
+    def transform(self, results):
+        """
+        Args:
+            results (dict): 데이터 샘플.
+
+        Returns:
+            dict: 변환된 데이터 샘플.
+        """
+        img = results['img']
+        label = results['gt_seg_map']
+        img_shape = results['img_shape']
+
+        # -------------------------------
+        # 'Trapezium', 'Pisiform', 'Hamate', 'Lunate' 클래스의 전체 좌표 수집
+        # -------------------------------
+        all_coords = []
+        for cls in ['Trapezium', 'Pisiform', 'Hamate', 'Lunate']:
+            k = self.class2ind.get(cls)
+            if k is None:
+                print(f"Warning: Class '{cls}' is not mapped in class2ind. Skipping.")
+                continue
+            coords = np.column_stack(np.where(label[:, :, k] > 0))
+            if coords.size == 0:
+                print(f"Warning: Class '{cls}' has no pixels. Skipping.")
+                continue
+            all_coords.append(coords)
+
+        if not all_coords:
+            print("Warning: No target bone annotations found. Skipping SingleCropMixUpTransform.")
+            return results
+
+        all_coords = np.vstack(all_coords)
+
+        # 전체 x_min, x_max, y_min, y_max 계산
+        overall_x_min = all_coords[:, 1].min()  # x축
+        overall_x_max = all_coords[:, 1].max()
+        overall_y_min = all_coords[:, 0].min()  # y축
+        overall_y_max = all_coords[:, 0].max()
+
+        # 전체 크롭 폭 및 높이 계산
+        crop_width = overall_x_max - overall_x_min + self.padding
+        crop_height = overall_y_max - overall_y_min + self.padding
+        crop_width = max(crop_width, self.min_crop_size)
+        crop_height = max(crop_height, self.min_crop_size)
+        crop_width = min(crop_width, img_shape[1])  # 이미지 너비 제한
+        crop_height = min(crop_height, img_shape[0])  # 이미지 높이 제한
+
+        # 크롭의 중심 계산
+        center_x = (overall_x_min + overall_x_max) / 2.0
+        center_y = (overall_y_min + overall_y_max) / 2.0
+
+        # 크롭 시작 및 끝 좌표 계산, 이미지 경계를 벗어나지 않도록 조정
+        start_x = max(int(center_x - crop_width / 2.0), 0)
+        start_y = max(int(center_y - crop_height / 2.0), 0)
+        end_x = start_x + crop_width
+        end_y = start_y + crop_height
+
+        if end_x > img_shape[1]:
+            end_x = img_shape[1]
+            start_x = max(int(end_x - crop_width), 0)
+        if end_y > img_shape[0]:
+            end_y = img_shape[0]
+            start_y = max(int(end_y - crop_height), 0)
+
+        # 크롭 수행
+        cropped_img = img[start_y:end_y, start_x:end_x].copy()
+        cropped_label = label[start_y:end_y, start_x:end_x, :].copy()
+
+        # MixUp 비율 결정
+        lambda_val = np.random.beta(self.alpha, self.alpha)
+
+        # 랜덤 위치로 손등뼈 삽입 반복
+        min_insertions, max_insertions = self.num_insertions
+        num_insertions = random.randint(min_insertions, max_insertions)  # 손등뼈를 삽입할 횟수
+        # print(f"Inserting MixUp crop {num_insertions} times into the original image.")
+
+        for i in range(num_insertions):
+            # 삽입할 위치를 랜덤하게 선택, 이미지 경계를 벗어나지 않도록 조정
+            insert_x = random.randint(0, img_shape[1] - crop_width)
+            insert_y = random.randint(0, img_shape[0] - crop_height)
+
+            # MixUp 수행: 원본 이미지의 해당 영역과 크롭 이미지를 혼합
+            mixed_img = (lambda_val * img[insert_y:insert_y + crop_height, insert_x:insert_x + crop_width] + 
+                         (1 - lambda_val) * cropped_img).astype(img.dtype)
+            mixed_label = (lambda_val * label[insert_y:insert_y + crop_height, insert_x:insert_x + crop_width, :] + 
+                           (1 - lambda_val) * cropped_label).astype(label.dtype)
+
+            # 원본 이미지에 MixUp된 크롭 삽입
+            img[insert_y:insert_y + crop_height, insert_x:insert_x + crop_width] = mixed_img
+            label[insert_y:insert_y + crop_height, insert_x:insert_x + crop_width, :] = mixed_label
+
+        # 결과 업데이트
+        results['img'] = img
+        results['gt_seg_map'] = label
+        results.setdefault('seg_fields', []).append('gt_seg_map')
+
+        return results
+
+    def __repr__(self):
+        return (f"{self.__class__.__name__}(alpha={self.alpha}, padding={self.padding}, "
+                f"min_crop_size={self.min_crop_size}, num_insertions={self.num_insertions})")
