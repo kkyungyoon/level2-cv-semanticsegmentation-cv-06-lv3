@@ -17,7 +17,7 @@ train_pipeline = [
     # dict(type='PhotoMetricDistortion'),
     dict(type='PackSegInputs')
 ]
-test_pipeline = [
+val_pipeline = [
     dict(type='LoadImageFromFile'),
     # dict(type='Resize', scale=(2560, 640), keep_ratio=True),
     # dict(type='Resize', scale=(2560, 640), keep_ratio=True),
@@ -28,28 +28,46 @@ test_pipeline = [
     # dict(type='LoadXRayAnnotations'),
     dict(type='PackSegInputs')
 ]
+
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    # dict(type='Resize', scale=(2560, 640), keep_ratio=True),
+    # dict(type='Resize', scale=(2560, 640), keep_ratio=True),
+    # dict(type='Resize', scale=(640,640), keep_ratio=True),
+    # add loading annotation after ``Resize`` because ground truth
+    # does not need to do resize data transform
+    # dict(type='LoadAnnotations', reduce_zero_label=False),
+    # dict(type='LoadXRayAnnotations'),
+    dict(type='PackSegInputs')
+]
+
+
 # img_ratios = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]
+img_ratios = [0.5, 1.0, 1.5]
+
 tta_pipeline = [
     dict(type='LoadImageFromFile', backend_args=None),
     dict(
         type='TestTimeAug',
         transforms=[
-            # [
-            #     dict(type='Resize', scale_factor=r, keep_ratio=True)
-            #     for r in img_ratios
-            # ],
+        #     [
+        #         dict(type='Resize', scale_factor=r, keep_ratio=True)
+        #         for r in img_ratios
+        #     ],
             [
                 dict(type='RandomFlip', prob=0., direction='horizontal'),
                 dict(type='RandomFlip', prob=1., direction='horizontal')
-            ], [
-                dict(type='LoadAnnotations') 
-                # dict(type='LoadXRayAnnotations')
-                ], [dict(type='PackSegInputs')]
+            ], 
+            # [
+            #     dict(type='LoadAnnotations') 
+            #     # dict(type='LoadXRayAnnotations')
+            #     ], 
+                [dict(type='PackSegInputs')]
         ])
 ]
 
 train_dataloader = dict(
-    batch_size=2,
+    batch_size=32,
     num_workers=4,
     persistent_workers=False,
     sampler=dict(type='InfiniteSampler', shuffle=True),
@@ -57,12 +75,16 @@ train_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         data_prefix=dict(
-            img_path='crop_train_Trapezoid/images', seg_map_path='crop_train_Trapezoid/annos'),
+            # img_path='crop_all_Trapezoid/images', 
+            # seg_map_path='crop_all_Trapezoid/annos'),
+            img_path='crop_all_Triquetrum/images', 
+            seg_map_path='crop_all_Triquetrum/annos'),
+
         pipeline=train_pipeline))
 
 
 val_dataloader = dict(
-    batch_size=1,
+    batch_size= 32,
     num_workers=0,
     persistent_workers=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
@@ -70,10 +92,23 @@ val_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         data_prefix=dict(
-            img_path='crop_val_Trapezoid/images',
-            seg_map_path='crop_val_Trapezoid/annos'),
+            img_path='crop_val_Triquetrum/images',
+            seg_map_path='crop_val_Triquetrum/annos'),
+        pipeline=val_pipeline))
+
+
+test_dataloader = dict(
+    batch_size= 32,
+    num_workers=0,
+    persistent_workers=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        data_prefix=dict(
+            img_path='crop_test_Triquetrum/images',
+            seg_map_path=''),
         pipeline=test_pipeline))
-test_dataloader = val_dataloader
 
 # val_evaluator = dict(type='DiceCoefficient', num_classes=29)
 # test_evaluator = val_evaluator

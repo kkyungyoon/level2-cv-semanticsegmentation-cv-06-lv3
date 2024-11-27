@@ -57,7 +57,7 @@ param_scheduler = [
 val_evaluator = dict(type='IoUMetric')
 test_evaluator = dict(
     type='LREOneMetric',
-    output_dir='work_dirs/seg_b5_crop')
+    output_dir='work_dirs/seg_b5_triquetrum_crop')
 
 train_dataloader = dict(batch_size=32, num_workers=4)
 val_dataloader = dict(batch_size=32, num_workers=4)

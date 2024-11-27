@@ -41,6 +41,7 @@ class LREOneMetric(BaseMetric):
         """
         super().__init__()
         self.output_dir = output_dir
+        print(output_dir)
         self.ignore_index = ignore_index
         self.reset()
 
@@ -100,7 +101,7 @@ class LREOneMetric(BaseMetric):
 
         # pdb.set_trace()
 
-
+        print(self.output_dir)
         for output,image_name in zip(preds, image_names):
             
             output_image_path = os.path.join(self.output_dir,image_name)
