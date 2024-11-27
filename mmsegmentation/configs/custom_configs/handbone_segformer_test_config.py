@@ -40,4 +40,41 @@ param_scheduler = [
 
 train_dataloader = dict(batch_size=1, num_workers=4)
 val_dataloader = dict(batch_size=1, num_workers=4)
-test_dataloader = val_dataloader
+
+
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    # dict(type='Resize', scale=(2560, 1024), keep_ratio=True),
+    # dict(type='Resize', scale=(2560, 1024), keep_ratio=True),
+    dict(type='Resize', scale=(2048,2048), keep_ratio=True),
+    # add loading annotation after ``Resize`` because ground truth
+    # does not need to do resize data transform
+    # dict(type='LoadAnnotations', reduce_zero_label=True),
+    dict(type='PackSegInputs')
+]
+
+
+dataset_type = 'XRayDataset'
+data_root = '/data/ephemeral/home/level2-cv-semanticsegmentation-cv-06-lv3/data'
+
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=0,
+    persistent_workers=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        data_prefix=dict(
+            img_path='fold_test/images',
+            #img_path='fold_test/images',
+            seg_map_path=''),
+        pipeline=test_pipeline))
+
+test_evaluator = dict(
+    type='LREMetric',
+    output_dir='work_dirs/format_results'
+
+)
+
+val_evaluator = test_evaluator
