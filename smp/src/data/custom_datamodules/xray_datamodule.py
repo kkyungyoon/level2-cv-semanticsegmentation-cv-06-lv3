@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from src.data.base_datamodule import BaseDataModule
 from src.data.datasets.xray_dataset import XRayDataset
 from src.data.datasets.xray_inferencedataset import XRayInferenceDataset
+from src.data.datasets.xray_validationdataset import XRayValidationDataset
 from src.utils.data_utils import load_yaml_config 
 from src.utils.seed_utils import set_seed
 
@@ -69,6 +70,15 @@ class XRayDataModule(BaseDataModule):
         self.test_dataset = XRayInferenceDataset(
             image_path=test_data_path,
             transforms=test_transforms
+        )
+
+        # define inference dataset (for validation set inference)
+        self.inference_dataset = XRayValidationDataset(
+            image_path=train_data_path,
+            label_path=train_label_path,
+            is_train=False,
+            transforms=test_transforms,
+            val_fold=self.val_fold
         )
 
     def train_dataloader(self):

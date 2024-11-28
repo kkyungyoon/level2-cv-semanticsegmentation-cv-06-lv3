@@ -176,7 +176,6 @@ class SmpModule(pl.LightningModule):
             outputs = F.interpolate(outputs, size=(2048, 2048), mode=self.mode, align_corners=True)
 
         outputs = torch.sigmoid(outputs)
-        outputs = (outputs > 0.5).detach().cpu().numpy()
 
         for output, image_name in zip(outputs, image_names):
             self._generate_rles(output, image_name)
@@ -284,7 +283,9 @@ class SmpModule(pl.LightningModule):
     def _generate_rles(self, output, image_name):
         """Generate RLEs for each class and append to results."""
         for c, segm in enumerate(output):
-            rle = self.encode_mask_to_rle(segm)
+            # you can adjust threshold class by class (feat. utils/constants.py)
+            binary_mask = (segm > THRESHOLD[c]).detach().cpu().numpy()
+            rle = self.encode_mask_to_rle(binary_mask)
             self.rles.append(rle)
             self.filename_and_class.append(f"{IND2CLASS[c]}_{image_name}")
 
