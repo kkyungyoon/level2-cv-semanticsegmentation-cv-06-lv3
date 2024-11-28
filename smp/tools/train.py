@@ -61,13 +61,13 @@ def main(config_path, checkpoint_path=None):
     # callbacks: earlystop, val_interval
     # loggers: tensorboard, wandb
     # precision: use amp or not
-    # accumulate_grad_batches: default (16 same as the number of groups in group norm - plmodule)
+    # accumulate_grad_batches: default (2)
     trainer = pl.Trainer(
         **train_config["trainer"],
         callbacks=callbacks,
         logger=logger,
         precision=amp,
-        accumulate_grad_batches=16,
+        accumulate_grad_batches=2,
     )
 
     # Fit your model
