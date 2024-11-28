@@ -23,11 +23,11 @@ class SmpModule(pl.LightningModule):
         self.rles = []
         self.filename_and_class = []
 
-        self.setup()
+        self._setup()
 
     #################################################################################
 
-    def setup(self):
+    def _setup(self):
         self._load_configs()
         self._setup_interpolation()
         self._setup_sliding_window()
@@ -37,28 +37,28 @@ class SmpModule(pl.LightningModule):
     def _load_configs(self):
         """Load train and util configs."""
         self.train_config = load_yaml_config(self.config["path"].get("train", ""))
-        self.util_config = load_yaml_config(self.config["path"].get("util", ""))
+        self.experiments_config = load_yaml_config(self.config["path"].get("experiments", ""))
 
     def _setup_interpolation(self):
         """Set up interpolation mode."""
-        interpolation_config = self.util_config.get("interpolation", {})
+        interpolation_config = self.experiments_config.get("interpolation", {})
         self.mode = interpolation_config.get("mode", "bilinear") if interpolation_config.get("enabled", False) else "bilinear"
 
     def _setup_sliding_window(self):
         """Set up sliding window parameters."""
-        sliding_window_config = self.util_config.get("sliding_window", {})
+        sliding_window_config = self.experiments_config.get("sliding_window", {})
         self.sliding_window = sliding_window_config.get("enabled", False)
         if self.sliding_window:
             self.sliding_window_infer = SlidingWindowInference(
                 model=self.model, 
                 patch_size=sliding_window_config.get("patch_size", 1024),
                 batch_size=sliding_window_config.get("batch_size", 1),
-                num_classes=self.util_config.get("num_classes", 29)
+                num_classes=self.experiments_config.get("num_classes", 29)
                 )
 
     def _setup_crf(self):
         """Set up CRF parameters."""
-        self.crf = self.util_config.get("crf", {}).get("enabled", False)
+        self.crf = self.experiments_config.get("crf", {}).get("enabled", False)
 
     def _replace_batchnorm_with_groupnorm(self):
         """Replace BatchNorm layers with GroupNorm layers."""
@@ -167,10 +167,10 @@ class SmpModule(pl.LightningModule):
             "image_name": image_name,
             "class": classes,
             "rle": self.rles,
-        })
+        }) 
 
         current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        df.to_csv(f"./logs/{self.config.get("filename", "")}_{current_time}.csv", index=False)
+        df.to_csv(f"./logs/{self.config.get('filename', '')}_{current_time}.csv", index=False)
 
         return df
     

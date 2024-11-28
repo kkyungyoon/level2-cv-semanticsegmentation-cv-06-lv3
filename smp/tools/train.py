@@ -21,7 +21,7 @@ def main(config_path, checkpoint_path=None):
     # check whether auto mixed precision is used
     if "amp" in experiments_config and experiments_config["amp"].get("enabled", False):
         print(f'... Use auto mixed precision (amp) ...')
-        amp = "bf16"
+        amp = "16"
     else:
         amp = None
 
@@ -61,13 +61,13 @@ def main(config_path, checkpoint_path=None):
     # callbacks: earlystop, val_interval
     # loggers: tensorboard, wandb
     # precision: use amp or not
-    # accumulate_grad_batches: default (2)
+    # you can use accumulate_grad_batches
     trainer = pl.Trainer(
         **train_config["trainer"],
         callbacks=callbacks,
         logger=logger,
         precision=amp,
-        accumulate_grad_batches=2,
+        # accumulate_grad_batches=2,
     )
 
     # Fit your model

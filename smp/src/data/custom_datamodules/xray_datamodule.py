@@ -24,6 +24,7 @@ class XRayDataModule(BaseDataModule):
         # setting image_size & validation fold number
         self.image_size = self.data_config.get("image_size", 512)
         self.val_fold = self.data_config.get("val_fold", 0)
+        self.collate_fn = None
 
         # load train transform
         if self.augmentation_config["augmentation"].get("enabled", False):
@@ -70,8 +71,8 @@ class XRayDataModule(BaseDataModule):
     def train_dataloader(self):
         return DataLoader(
             self.train_dataset,
-            batch_size=self.config["data"]["train"]["batch_size"],
-            num_workers=self.config["data"]["train"]["num_workers"],
+            batch_size=self.data_config["data"]["train"].get("batch_size", 2),
+            num_workers=self.data_config["data"]["train"].get("num_workers", 4),
             shuffle=True,
             collate_fn=self.collate_fn,
             persistent_workers=True,
@@ -80,8 +81,8 @@ class XRayDataModule(BaseDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
-            batch_size=self.config["data"]["val"]["batch_size"],
-            num_workers=self.config["data"]["val"]["num_workers"],
+            batch_size=self.data_config["data"]["val"].get("batch_size", 2),
+            num_workers=self.data_config["data"]["val"].get("num_workers", 4),
             shuffle=False,
             collate_fn=self.collate_fn,
             persistent_workers=True,
@@ -90,8 +91,8 @@ class XRayDataModule(BaseDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.test_dataset,
-            batch_size=self.config["data"]["test"]["batch_size"],
-            num_workers=self.config["data"]["test"]["num_workers"],
+            batch_size=self.data_config["data"]["test"].get("batch_size", 2),
+            num_workers=self.data_config["data"]["test"].get("num_workers", 4),
             shuffle=False,
             collate_fn=self.collate_fn,
             persistent_workers=True,

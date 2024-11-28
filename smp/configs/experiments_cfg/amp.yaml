@@ -21,6 +21,6 @@ crf:
   enabled: False # default: false
   notes: "crf postprocessing (background vs. 1 class)"
 
-# auto mixed preicision bf-16
+# auto mixed preicision float-16
 amp:
   enabled: True # default: false

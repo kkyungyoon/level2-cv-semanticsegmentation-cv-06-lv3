@@ -6,16 +6,16 @@ data:
   test_data_path: /data/ephemeral/data/test/DCM
   pin_memory: true
   train:
-    batch_size: 8
+    batch_size: 4
     num_workers: 7
     shuffle: true
   val:
-    batch_size: 8
-    num_workers: 7
+    batch_size: 2
+    num_workers: 4
     shuffle: false
   test:
-    batch_size: 8
-    num_workers: 7
+    batch_size: 2
+    num_workers: 4
     shuffle: false
   predict:
     batch_size: 1
