@@ -43,11 +43,13 @@ class XRayDataModule(BaseDataModule):
         train_data_path = self.data_config["data"].get("train_data_path", "")
         train_label_path = self.data_config["data"].get("train_label_path", "")
         test_data_path = self.data_config["data"].get("test_data_path", "")
+        meta_data_path = self.data_config["data"].get("meta_data_path", None)
 
         # define train dataset
         self.train_dataset = XRayDataset(
-            image_path= train_data_path,
-            label_path= train_label_path,
+            image_path=train_data_path,
+            label_path=train_label_path,
+            meta_path=meta_data_path,
             is_train=True,
             transforms=train_transforms,
             val_fold=self.val_fold
@@ -55,8 +57,9 @@ class XRayDataModule(BaseDataModule):
         
         # define val dataset
         self.val_dataset = XRayDataset(
-            image_path= train_data_path,
-            label_path= train_label_path,
+            image_path=train_data_path,
+            label_path=train_label_path,
+            meta_path=meta_data_path,
             is_train=False,
             transforms=test_transforms,
             val_fold=self.val_fold
@@ -64,7 +67,7 @@ class XRayDataModule(BaseDataModule):
 
         # define test dataset
         self.test_dataset = XRayInferenceDataset(
-            image_path= test_data_path,
+            image_path=test_data_path,
             transforms=test_transforms
         )
 
@@ -139,4 +142,7 @@ class XRayDataModule(BaseDataModule):
         return A.Compose(
             transform_list,
             )
+
+            
+
         

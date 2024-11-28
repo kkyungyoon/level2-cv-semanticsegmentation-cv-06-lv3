@@ -9,8 +9,10 @@ import datetime
 import torch.nn as nn
 
 from src.models.smp_model import SmpModel
+from src.models.gender_classifier import GenderClassifier
+from src.models.leftright_classifier import LeftRightClassifier
 from src.utils.data_utils import load_yaml_config
-from src.utils.constants import IND2CLASS
+from src.utils.constants import IND2CLASS, GENDER, LEFTRIGHT, THRESHOLD
 from src.utils.sliding_window import SlidingWindowInference
 
 class SmpModule(pl.LightningModule):
@@ -29,6 +31,7 @@ class SmpModule(pl.LightningModule):
 
     def _setup(self):
         self._load_configs()
+        self._setup_auxclassifier()
         self._setup_interpolation()
         self._setup_sliding_window()
         self._setup_crf()
@@ -38,6 +41,14 @@ class SmpModule(pl.LightningModule):
         """Load train and util configs."""
         self.train_config = load_yaml_config(self.config["path"].get("train", ""))
         self.experiments_config = load_yaml_config(self.config["path"].get("experiments", ""))
+
+    def _setup_auxclassifier(self):
+        """Set up auxclassifier for multi-task learning"""
+        self.gender = self.experiments_config["metadata"]["gender"].get("enabled", False)
+        self.leftright = self.experiments_config["metadata"]["leftright"].get("enabled", False)
+        
+        self.gender_classifier = GenderClassifier() if self.gender else None
+        self.leftright_classifier = LeftRightClassifier() if self.leftright else None
 
     def _setup_interpolation(self):
         """Set up interpolation mode."""
@@ -87,25 +98,65 @@ class SmpModule(pl.LightningModule):
     def forward(self, images, labels=None):
         return self.model(images, labels)
     
-    def training_step(self, batch, batch_idx):
-        images, labels = batch
+    def common_step(self, batch):
+        if self.gender or self.leftright:
+            images, labels, metas = batch
+        else:
+            images, labels = batch
+
         outputs, loss = self.model(images, labels)
+
+        gender_loss = None
+        leftright_loss = None
+
+        if self.gender:
+            # metas에서 gender 정보를 추출
+            genders = [GENDER.get(meta, GENDER["female"]) for meta in metas['gender']]
+
+            # genders를 텐서로 변환 (batch_size 크기)
+            genders = torch.tensor(genders, dtype=torch.long, device=outputs.device)
+
+            # gender_classifier 호출 (배치 입력)
+            _, gender_loss = self.gender_classifier(outputs, genders)
+        
+        if self.leftright:
+            # metas에서 leftright 정보를 추출
+            leftrights = [LEFTRIGHT.get(meta, LEFTRIGHT["왼손"]) for meta in metas['label']]
+
+            # leftrights 텐서로 변환 (batch_size 크기)
+            leftrights = torch.tensor(leftrights, dtype=torch.long, device=outputs.device)
+
+            # leftright_classifier 호출 (배치 입력)
+            _, leftright_loss = self.leftright_classifier(outputs, leftrights)
+        
+        return outputs, labels, loss, gender_loss, leftright_loss
+
+    
+    def training_step(self, batch, batch_idx):
+        _, _, loss, gender_loss, leftright_loss = self.common_step(batch)
 
         # log
         self.log('train_loss', loss, prog_bar=True)
-        
+        self.log('gender_train_loss', gender_loss or 0.0)
+        self.log('leftright_train_loss', leftright_loss or 0.0)
+        if gender_loss:
+            loss += 0.2 * gender_loss
+        if leftright_loss:
+            loss += 0.2 * leftright_loss
+
         return loss
 
     def validation_step(self, batch, batch_idx):
         if not self.sliding_window:
-            images, labels = batch
-            outputs, loss = self.model(images, labels)
+            outputs, labels, loss, gender_loss, leftright_loss = self.common_step(batch)
         else:
             images, labels = batch
             outputs = self.sliding_window_infer._sliding_window_step(images)
             loss = self.model.criterion(outputs, labels)
 
         self.log('val_loss', loss, prog_bar=True)
+        self.log('gender_val_loss', gender_loss or 0.0)
+        self.log('leftright_val_loss', leftright_loss or 0.0)
 
         outputs = torch.sigmoid(outputs)
         outputs = (outputs > 0.5).float()

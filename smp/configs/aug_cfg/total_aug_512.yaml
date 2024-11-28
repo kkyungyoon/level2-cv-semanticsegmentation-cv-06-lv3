@@ -35,7 +35,7 @@ augmentation:
       params:
         limit: 10
         p: 0.3
-    - name: HorizontalFlip
-      params:
-        p: 0.3
+    # - name: HorizontalFlip
+    #   params:
+    #     p: 0.3
     

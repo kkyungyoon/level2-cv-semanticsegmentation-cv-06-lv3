@@ -8,10 +8,11 @@ from sklearn.model_selection import GroupKFold
 from torch.utils.data import Dataset
 
 class XRayDataset(Dataset):
-    def __init__(self, image_path, label_path, is_train=True, transforms=None, val_fold=0):
+    def __init__(self, image_path, label_path, meta_path=None, is_train=True, transforms=None, val_fold=0):
 
         self.image_path = image_path
         self.label_path = label_path
+        self.meta_path = meta_path
 
         self.CLASSES = [
             'finger-1', 'finger-2', 'finger-3', 'finger-4', 'finger-5',
@@ -24,6 +25,14 @@ class XRayDataset(Dataset):
 
         self.CLASS2IND = {v: i for i, v in enumerate(self.CLASSES)}
         self.IND2CLASS = {v: k for k, v in self.CLASS2IND.items()}
+
+        # Load meta information
+        if self.meta_path:
+            with open(self.meta_path, "r") as f:
+                meta_info = json.load(f)
+                self.meta_info = {meta["image_name"]: meta for meta in meta_info}
+        else:
+            self.meta_info = None
 
         pngs = {
             os.path.relpath(os.path.join(root, fname), start=self.image_path)
@@ -116,6 +125,12 @@ class XRayDataset(Dataset):
             cv2.fillPoly(class_label, [points], 1)
             label[..., class_ind] = class_label
 
+        # 메타 정보 추가
+        meta_info = None
+        if self.meta_info:
+            # image_path에서 ID 추출
+            meta_info = self.meta_info.get(os.path.basename(image_name), None)
+
         if self.transforms is not None:
             inputs = {"image": image, "mask": label} if self.is_train else {"image": image}
             result = self.transforms(**inputs)
@@ -130,4 +145,8 @@ class XRayDataset(Dataset):
         image = torch.from_numpy(image).float()
         label = torch.from_numpy(label).float()
 
-        return image, label
+        # 메타 정보 반환
+        if self.meta_info:
+            return image, label, meta_info
+        else:
+            return image, label

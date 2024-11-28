@@ -10,3 +10,9 @@ CLASSES = [
 CLASS2IND = {v: i for i, v in enumerate(CLASSES)}
 
 IND2CLASS = {v: k for k, v in CLASS2IND.items()}
+
+THRESHOLD = [0] * 29
+
+GENDER = {"female": 0, "male": 1}
+
+LEFTRIGHT = {"오른손": 0, "왼손": 1}

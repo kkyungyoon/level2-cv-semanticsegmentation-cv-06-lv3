@@ -20,7 +20,7 @@ scheduler:
     eta_min: 0.000001   # 1e-6
 
 trainer:
-  max_epochs: 100
+  max_epochs: 200
   check_val_every_n_epoch: 5    # validation interval
   accelerator: gpu
   devices: 1
@@ -43,4 +43,4 @@ logger:
   tensorboard: True
   wandb: False                   # To use the wandb logger, you must init it first.
   project: arch                 # {unetplusplus}
-  name: encoder_experiments     # {efficientnet-b7}_{rotate_aug_test}
+  name: gender+leftright     # {efficientnet-b7}_{rotate_aug_test}
