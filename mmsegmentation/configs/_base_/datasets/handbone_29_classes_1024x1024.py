@@ -1,17 +1,17 @@
 # dataset settings
 dataset_type = 'XRayDataset'
-data_root = '/data/ephemeral/home/data'
-crop_size = (1024, 1024)
+data_root = '/data/ephemeral/home/level2-cv-semanticsegmentation-cv-06-lv3/data'
+crop_size = (2048, 2048)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     # dict(type='LoadAnnotations', reduce_zero_label=True),
     dict(type='LoadXRayAnnotations'),
     # dict(
     #     type='RandomResize',
-    #     scale=(2560, 1024),
+    #     scale=(2560, 2048),
     #     ratio_range=(0.5, 2.0),
     #     keep_ratio=True),
-    dict(type='Resize', scale=(1024,1024), keep_ratio=True),
+    dict(type='Resize', scale=(2048,2048), keep_ratio=True),
     # dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75), #TODO too slow
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
@@ -19,9 +19,9 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    # dict(type='Resize', scale=(2560, 1024), keep_ratio=True),
-    # dict(type='Resize', scale=(2560, 1024), keep_ratio=True),
-    dict(type='Resize', scale=(1024,1024), keep_ratio=True),
+    # dict(type='Resize', scale=(2560, 2048), keep_ratio=True),
+    # dict(type='Resize', scale=(2560, 2048), keep_ratio=True),
+    dict(type='Resize', scale=(2048,2048), keep_ratio=True),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
     # dict(type='LoadAnnotations', reduce_zero_label=True),
@@ -34,17 +34,32 @@ tta_pipeline = [
     dict(
         type='TestTimeAug',
         transforms=[
-            [
-                dict(type='Resize', scale_factor=r, keep_ratio=True)
-                for r in img_ratios
-            ],
+            # Resize 옵션이 필요하다면 여기에 추가
+            # [
+            #     dict(type='Resize', scale_factor=r, keep_ratio=True)
+            #     for r in img_ratios
+            # ],
             [
                 dict(type='RandomFlip', prob=0., direction='horizontal'),
                 dict(type='RandomFlip', prob=1., direction='horizontal')
-            ], [
-                # dict(type='LoadAnnotations') 
-                dict(type='LoadXRayAnnotations')
-                ], [dict(type='PackSegInputs')]
+            ],
+            [
+                dict(type='PhotoMetricDistortion',
+                     brightness_delta=0,  # 밝기 조정 없음 (원본 유지)
+                     contrast_range=(1.0, 1.0)),  # 대비 조정 없음 (원본 유지)
+                dict(type='PhotoMetricDistortion',
+                     brightness_delta=16,  # 밝기 조정
+                     contrast_range=(0.8, 1.2))  # 대비 조정
+            ],
+            # 원본 데이터
+            # [
+            #     dict(type='RandomRotate', prob=0., degree=5),  # 회전 없음
+            #     dict(type='RandomRotate', prob=1.0, degree=5)  # ±5° 회전
+            # ],
+  
+            [
+                dict(type='PackSegInputs')  # Annotation 로드 제거
+            ]
         ])
 ]
 train_dataloader = dict(
@@ -74,5 +89,6 @@ val_dataloader = dict(
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
-val_evaluator = dict(type='DiceCoefficient', num_classes=29)
-test_evaluator = val_evaluator
+#테스트용 주석
+# val_evaluator = dict(type='DiceCoefficient', num_classes=29)
+# test_evaluator = val_evaluator

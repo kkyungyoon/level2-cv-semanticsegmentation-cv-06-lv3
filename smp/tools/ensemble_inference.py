@@ -13,9 +13,9 @@ def parse_args():
     parser.add_argument("--config", help="inference config file path")
     parser.add_argument(
         "--method",
-        choices=["majority_vote", "average", "intersection"],
+        choices=["majority_vote", "weighted_majority_vote", "average", "intersection"],
         default="majority_vote",
-        help="select ensemble method [majority_vote, average, intersection]",
+        help="select ensemble method [majority_vote, weighted_majority_vote, average, intersection]",
     )
     return parser.parse_args()
 
@@ -56,6 +56,20 @@ def majority_vote_ensemble(masks):
     return (np.mean(masks, axis=0) >= 0.5).astype(np.uint8)
 
 
+def weighted_majority_vote_ensemble(masks, weights):
+    """
+    Weighted Majority vote ensemble method.
+    
+    masks: list of numpy arrays (binary masks from different models)
+    weights: list of weights corresponding to each model
+    """
+    masks = np.stack(masks, axis=0)  # Shape: (num_models, height, width)
+    weights = np.array(weights).reshape(-1, 1, 1)  # Shape: (num_models, 1, 1)
+    weighted_sum = np.sum(masks * weights, axis=0)
+    threshold = np.sum(weights) / 2
+    return (weighted_sum >= threshold).astype(np.uint8)
+
+
 def average_ensemble(masks, threshold=0.5):
     """
     Average-based ensemble method.
@@ -73,15 +87,18 @@ def intersection_ensemble(masks):
 
 
 def ensemble_and_save(
-    csv_paths, save_path, height=2048, width=2048, method="majority_vote"
+    csv_paths, save_path, weights_config, height=2048, width=2048, method="majority_vote"
 ):
     """
     Reads CSV files, performs ensemble, and saves results to a file.
+    
+    weights_config: dictionary mapping class_id to list of weights per model
     """
     ensemble_data = {}
-
+    num_models = len(csv_paths)
+    
     # Collect data from all CSVs
-    for csv_path in tqdm(csv_paths, desc="Processing CSV files"):
+    for csv_idx, csv_path in enumerate(tqdm(csv_paths, desc="Processing CSV files")):
         df = pd.read_csv(csv_path)
         for _, row in df.iterrows():
             image_name = row["image_name"]
@@ -97,8 +114,8 @@ def ensemble_and_save(
             if image_name not in ensemble_data:
                 ensemble_data[image_name] = {}
             if class_id not in ensemble_data[image_name]:
-                ensemble_data[image_name][class_id] = []
-            ensemble_data[image_name][class_id].append(mask)
+                ensemble_data[image_name][class_id] = [None] * num_models
+            ensemble_data[image_name][class_id][csv_idx] = mask
 
     # Perform ensemble and save results line by line
     with open(save_path, "w") as f:
@@ -108,9 +125,20 @@ def ensemble_and_save(
             ensemble_data.items(), desc="Ensembling and saving results"
         ):
             for class_id, masks in classes.items():
-                # Apply ensemble method
+                # Remove None masks (in case some models did not predict this class)
+                masks = [m for m in masks if m is not None]
+                if not masks:
+                    print(f"No masks for: {image_name}, {class_id}")
+                    continue
+
                 if method == "majority_vote":
                     final_mask = majority_vote_ensemble(masks)
+                elif method == "weighted_majority_vote":
+                    # Retrieve weights for this class
+                    class_weights = weights_config.get(class_id, [1] * len(masks))
+                    if len(class_weights) != len(masks):
+                        raise ValueError(f"Number of weights for class {class_id} does not match number of models.")
+                    final_mask = weighted_majority_vote_ensemble(masks, class_weights)
                 elif method == "average":
                     final_mask = average_ensemble(masks)
                 elif method == "intersection":
@@ -131,6 +159,14 @@ def main(args):
     save_filename = str(cfg.save_filename)
     method = args.method
 
+    # Load weights from config
+    if method == "weighted_majority_vote":
+        weights_config = cfg.weights
+        if not weights_config:
+            raise ValueError("Weights configuration is required for weighted_majority_vote method.")
+    else:
+        weights_config = None
+
     save_dir = "./ensemble_results"
     os.makedirs(save_dir, exist_ok=True)
 
@@ -139,7 +175,9 @@ def main(args):
     save_path = f"{save_dir}/{save_filename}_{method}_{current_time}.csv"
 
     # Perform ensemble and save results
-    ensemble_and_save(csv_paths, save_path, method=method)
+    ensemble_and_save(
+        csv_paths, save_path, weights_config=weights_config, method=method
+    )
 
     print(f"Results saved to {save_path}")
 

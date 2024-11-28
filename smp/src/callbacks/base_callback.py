@@ -7,19 +7,19 @@ def _get_callbacks(config, logger_config):
         LearningRateMonitor(logging_interval='epoch')
     )
 
-    if config["model_checkpoint"]:
+    if config.get("callbacks", {}).get("model_checkpoint", {}).get("enabled", False):
         callbacks.append(
             ModelCheckpoint(
-                **config["model_checkpoint_params"],
                 dirpath=f"./logs/{logger_config['name']}/checkpoints/",
-                filename="{epoch:02d}-{val_loss:.2f}",
+                filename="{epoch:02d}-{avg_dice_score:.3f}",
+                **config["callbacks"]["model_checkpoint"]["params"]
             )
         )
 
-    if config["earlystopping"]:
+    if config.get("callbacks", {}).get("earlystopping", {}).get("enabled", False):
         callbacks.append(
             EarlyStopping(
-                **config["earlystopping_params"]
+                **config["callbacks"]["earlystopping"]["params"]
             )
         )
 

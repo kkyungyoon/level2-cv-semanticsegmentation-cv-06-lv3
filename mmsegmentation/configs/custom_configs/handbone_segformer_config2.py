@@ -1,9 +1,9 @@
 _base_ = [
     '../custom_models/custom_segformer.py',
     '../_base_/datasets/handbone_29_classes_1024x1024.py',
-    '../_base_/default_runtime.py', '../_base_/schedules/schedule_20k.py'
+    '../_base_/default_runtime.py', '../_base_/schedules/schedule_25k.py'
 ]
-crop_size = (1024, 1024)
+crop_size = (2048, 2048)
 data_preprocessor = dict(size=crop_size)
 # checkpoint = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/segformer/mit_b0_20220624-7e0fe6dd.pth'  # noqa
 model = dict(
@@ -11,7 +11,7 @@ model = dict(
     backbone=dict(
         # init_cfg=dict(type='Pretrained', checkpoint=checkpoint)
         ),
-    test_cfg=dict(mode='slide', crop_size=(1024, 1024), stride=(768, 768)))
+    test_cfg=dict(mode='slide', crop_size=(2048, 2048), stride=(1024, 1024)))
 
 optim_wrapper = dict(
     _delete_=True,
