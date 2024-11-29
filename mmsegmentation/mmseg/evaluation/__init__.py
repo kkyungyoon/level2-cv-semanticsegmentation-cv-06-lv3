@@ -4,7 +4,7 @@
 # from .iou_metric import IoUMetric
 # from .custom_metrics import DiceCoefficient
 
-from .metrics import CityscapesMetric, DepthMetric, IoUMetric, DiceCoefficient,LREMetric
+from .metrics import CityscapesMetric, DepthMetric, IoUMetric, DiceCoefficient,LREMetric,LREOneMetric
 
 
-__all__ = ['IoUMetric', 'CityscapesMetric', 'DepthMetric','DiceCoefficient', 'LREMetric']
+__all__ = ['IoUMetric', 'CityscapesMetric', 'DepthMetric','DiceCoefficient', 'LREMetric','LREOneMetric']
