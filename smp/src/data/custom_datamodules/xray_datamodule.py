@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from src.data.base_datamodule import BaseDataModule
 from src.data.datasets.xray_dataset import XRayDataset
 from src.data.datasets.xray_inferencedataset import XRayInferenceDataset
+from src.data.datasets.xray_validationdataset import XRayValidationDataset
 from src.utils.data_utils import load_yaml_config 
 from src.utils.seed_utils import set_seed
 
@@ -24,6 +25,7 @@ class XRayDataModule(BaseDataModule):
         # setting image_size & validation fold number
         self.image_size = self.data_config.get("image_size", 512)
         self.val_fold = self.data_config.get("val_fold", 0)
+        self.collate_fn = None
 
         # load train transform
         if self.augmentation_config["augmentation"].get("enabled", False):
@@ -42,11 +44,13 @@ class XRayDataModule(BaseDataModule):
         train_data_path = self.data_config["data"].get("train_data_path", "")
         train_label_path = self.data_config["data"].get("train_label_path", "")
         test_data_path = self.data_config["data"].get("test_data_path", "")
+        meta_data_path = self.data_config["data"].get("meta_data_path", None)
 
         # define train dataset
         self.train_dataset = XRayDataset(
-            image_path= train_data_path,
-            label_path= train_label_path,
+            image_path=train_data_path,
+            label_path=train_label_path,
+            meta_path=meta_data_path,
             is_train=True,
             transforms=train_transforms,
             val_fold=self.val_fold
@@ -54,8 +58,9 @@ class XRayDataModule(BaseDataModule):
         
         # define val dataset
         self.val_dataset = XRayDataset(
-            image_path= train_data_path,
-            label_path= train_label_path,
+            image_path=train_data_path,
+            label_path=train_label_path,
+            meta_path=meta_data_path,
             is_train=False,
             transforms=test_transforms,
             val_fold=self.val_fold
@@ -63,15 +68,24 @@ class XRayDataModule(BaseDataModule):
 
         # define test dataset
         self.test_dataset = XRayInferenceDataset(
-            image_path= test_data_path,
+            image_path=test_data_path,
             transforms=test_transforms
+        )
+
+        # define inference dataset (for validation set inference)
+        self.inference_dataset = XRayValidationDataset(
+            image_path=train_data_path,
+            label_path=train_label_path,
+            is_train=False,
+            transforms=test_transforms,
+            val_fold=self.val_fold
         )
 
     def train_dataloader(self):
         return DataLoader(
             self.train_dataset,
-            batch_size=self.config["data"]["train"]["batch_size"],
-            num_workers=self.config["data"]["train"]["num_workers"],
+            batch_size=self.data_config["data"]["train"].get("batch_size", 2),
+            num_workers=self.data_config["data"]["train"].get("num_workers", 4),
             shuffle=True,
             collate_fn=self.collate_fn,
             persistent_workers=True,
@@ -80,8 +94,8 @@ class XRayDataModule(BaseDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
-            batch_size=self.config["data"]["val"]["batch_size"],
-            num_workers=self.config["data"]["val"]["num_workers"],
+            batch_size=self.data_config["data"]["val"].get("batch_size", 2),
+            num_workers=self.data_config["data"]["val"].get("num_workers", 4),
             shuffle=False,
             collate_fn=self.collate_fn,
             persistent_workers=True,
@@ -90,8 +104,8 @@ class XRayDataModule(BaseDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.test_dataset,
-            batch_size=self.config["data"]["test"]["batch_size"],
-            num_workers=self.config["data"]["test"]["num_workers"],
+            batch_size=self.data_config["data"]["test"].get("batch_size", 2),
+            num_workers=self.data_config["data"]["test"].get("num_workers", 4),
             shuffle=False,
             collate_fn=self.collate_fn,
             persistent_workers=True,
@@ -138,4 +152,7 @@ class XRayDataModule(BaseDataModule):
         return A.Compose(
             transform_list,
             )
+
+            
+
         

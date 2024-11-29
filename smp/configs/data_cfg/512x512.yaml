@@ -4,18 +4,19 @@ data:
   train_data_path: /data/ephemeral/data/train/DCM
   train_label_path: /data/ephemeral/data/train/outputs_json
   test_data_path: /data/ephemeral/data/test/DCM
+  meta_data_path: /data/ephemeral/data/metadata.json # If you don’t use metadata, remove this line. (feat. experiments configs file)
   pin_memory: true
   train:
-    batch_size: 8
+    batch_size: 4
     num_workers: 7
     shuffle: true
   val:
-    batch_size: 8
-    num_workers: 7
+    batch_size: 2
+    num_workers: 4
     shuffle: false
   test:
-    batch_size: 8
-    num_workers: 7
+    batch_size: 2
+    num_workers: 4
     shuffle: false
   predict:
     batch_size: 1

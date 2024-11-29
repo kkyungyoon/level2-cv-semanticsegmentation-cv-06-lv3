@@ -11,15 +11,15 @@ class SmpModel(nn.Module):
         # load config files
         self.model_config = load_yaml_config(config["path"].get("model", ""))
         self.loss_config = load_yaml_config(config["path"].get("loss", ""))
-        self.util_config = load_yaml_config(config["path"].get("util", ""))
+        self.experiments_config = load_yaml_config(config["path"].get("experiments", ""))
 
         # create model (segementation models with pytorch)
         self.model = smp.create_model(
             **self.model_config["model"]
         )
 
-        if "interpolation" in self.util_config and self.util_config["interpolation"].get("enabled", False):
-            self.mode = self.util_config["interpolation"].get("mode", "bilinear")  # 기본값 bilinear
+        if "interpolation" in self.experiments_config and self.experiments_config["interpolation"].get("enabled", False):
+            self.mode = self.experiments_config["interpolation"].get("mode", "bilinear")  # 기본값 bilinear
         else:
             self.mode = "bilinear"  # interpolation이 비활성화된 경우 기본값
 

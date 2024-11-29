@@ -7,20 +7,20 @@
 
 optimizer:
   name: Adam
-  lr_backbone: 1e-5
+  lr_backbone: 2e-5
   params:
-    lr: 1e-4
+    lr: 2e-4
     weight_decay: 1e-6
 
 scheduler:
   name: CosineAnnealingWarmRestarts 
   params:
-    T_0: 100            # epoch (1 cycle)
+    T_0: 20            # epoch (1 cycle)
     T_mult: 2           # It decreases by 1/2 per cycle. (next cycle: T_0/2)
     eta_min: 0.000001   # 1e-6
 
 trainer:
-  max_epochs: 300
+  max_epochs: 200
   check_val_every_n_epoch: 5    # validation interval
   accelerator: gpu
   devices: 1
@@ -30,7 +30,7 @@ callbacks:
     enabled: True
     params:
       monitor: avg_dice_score
-      patience: 5               # validation interval * patience (25 patience)
+      patience: 3               # validation interval * patience (15 patience)
       mode: max
   model_checkpoint:
     enabled: True
@@ -41,6 +41,6 @@ callbacks:
 
 logger:
   tensorboard: True
-  wandb: True                   # To use the wandb logger, you must init it first.
+  wandb: False                   # To use the wandb logger, you must init it first.
   project: arch                 # {unetplusplus}
-  name: encoder_experiments     # {efficientnet-b7}_{rotate_aug_test}
+  name: model_experiments    # {efficientnet-b7}_{rotate_aug_test}

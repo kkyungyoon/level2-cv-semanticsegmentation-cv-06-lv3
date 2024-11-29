@@ -1,16 +1,11 @@
-# configs/experiments_cfg/crf.yaml
-
-# notes: you can use this config file for crf postprocessing on validation, test
-#      : pydensecrf only supports CPU operations and does not support multi-label,
-#      : so it is post-processed based on the correlation
-#      : between the background and each class.
-#      : The computation speed takes a very long time.
+# configs/experiments_cfg/amp.yaml
+# notes: you can use this config file for auto mixed precision (bf-16) on training model
 
 # interpolation method
 # read F.interpolate method args (document)
 interpolation:
   enabled: False # default: bilinear
-  mode: bilinear # you can use bicubic method
+  mode: bilinear
 
 # sliding window
 # if you use this option, you should set your val, test image_size = train image_size * 2
@@ -23,21 +18,21 @@ sliding_window:
 
 # crf postprocessing
 crf:
-  enabled: True # default: false
+  enabled: False # default: false
   notes: "crf postprocessing (background vs. 1 class)"
 
-# auto mixed preicision bf-16
+# auto mixed preicision float-16
 amp:
-  enabled: False # default: false
+  enabled: True # default: false
 
 # using metadata for multi-task learning
 metadata:
   gender:
-    enabled: False
+    enabled: True
     weights: 0.2
     notes: "aux classifier로 성별 이진 분류 task를 추가 (multi-task learning)"
   leftright:
-    enabled: False
+    enabled: True
     weights: 0.2
     notes: "aux classifier로 왼손 및 오른손 이진 분류 task를 추가 (multi-task learning)"
     descriptions: "사용 시 flip을 증강을 사용하지 않아야 옳은 실험이 됨"
