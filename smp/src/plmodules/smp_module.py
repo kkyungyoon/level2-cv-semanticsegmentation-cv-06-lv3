@@ -140,9 +140,9 @@ class SmpModule(pl.LightningModule):
         self.log('gender_train_loss', gender_loss or 0.0)
         self.log('leftright_train_loss', leftright_loss or 0.0)
         if gender_loss:
-            loss += 0.2 * gender_loss
+            loss += 0.005 * gender_loss
         if leftright_loss:
-            loss += 0.2 * leftright_loss
+            loss += 0.005 * leftright_loss
 
         return loss
 

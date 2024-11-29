@@ -43,4 +43,4 @@ logger:
   tensorboard: True
   wandb: False                   # To use the wandb logger, you must init it first.
   project: arch                 # {unetplusplus}
-  name: gender+leftright     # {efficientnet-b7}_{rotate_aug_test}
+  name: model_experiments    # {efficientnet-b7}_{rotate_aug_test}
