@@ -15,9 +15,8 @@
     1. [Models](#models)
     2. [Augmentation](#augmentation)
     3. [Image size](#imagesize)
- 5. [Results](#results)
- 6. [Appendix](#appendix)
- 7. [Contributors](#contributors)
+ 5. [Project Structure](#structure)
+ 6. [Contributors](#contributors)
 
 
 
@@ -48,7 +47,7 @@ Apply augmentation techniques based on Albumentations.</br>
 ##### Data Configuration
 Set the `data_path` and `batch_size` according to your dataset.
 ##### Experiment Configuration (Optional)
-Configure options like the interpolation method, sliding window, and CRF (Conditional Random Field) if needed.
+Configure options like the interpolation method, sliding window, CRF (Conditional Random Field) and Auxiliary Head if needed.
 ##### Loss Configuration
 Configure the loss functions supported by the SMP module.</br>
 (Refer to the [SMP documentation on losses](https://smp.readthedocs.io/en/latest/losses.html) for details.)
@@ -127,20 +126,39 @@ Experiments with changing the resolution of the training data to `512x512`, `102
 |---------------------------|:------------------------:|:------------------------------:|
 |efficientnet-b7 + UPerNet  |512x512                   |0.9498                          |
 |efficientnet-b7 + UPerNet  |1024x1024                 |0.9684                          |
-|efficientnetv2-m + Unet++  |2048x2048                 |                                |
 |res2net50_26w_4s + Unet++  |1024x1024                 |0.9684                          |
 |efficientnet-b7 + Unet++   |1024x1024                 |0.9698                          |
+|efficientnetv2-m + Unet++  |2048x2048                 |0.9706                          |
 |tu-hrnet_w64 + Unet++      |1024x1024 (+intensity aug)|0.9710                          |
 
 
-### 📊 Results <a name="results"></a>
+### 📂 Project Structure <a name="structure"></a>
 ---
-
-
-
-### 📎 Appendix <a name="appendix"></a>
----
-
+```bash
+📁smp/
+├── 📁configs/
+│   ├── 📁aug_cfg/
+│   ├── 📁data_cfg/
+│   ├── 📁experitments_cfg/
+│   ├── 📁loss_cfg/
+│   ├── 📁model_cfg/
+│   ├── 📁total_cfg/
+│   ├── 📁train_cfg/
+├── 📁segmentation_models_pytorch/        # from official smp repo
+├── 📁src/
+│   ├── 📁callbacks/      
+│   ├── 📁data/      
+│   │   ├── 📁custom_datamodules/  
+│   │   ├── 📁datasets/  
+│   ├── 📁logger/      
+│   ├── 📁models/      
+│   ├── 📁plmodules/      
+│   ├── 📁utils/      
+├── 📁tests/                
+├── 📁tools/                
+├── 🛠️requirements.txt    
+└── 📝README.md
+```
 
 
 ### 👥 Contributors <a name="contributors"></a>
