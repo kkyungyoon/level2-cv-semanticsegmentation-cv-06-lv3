@@ -60,4 +60,4 @@ Xray 이미지에서 손가락 뼈들을 Segmentation하는 Multi-Label  Task를
 | **영태** | MMsegmentation 라이브러리 세팅 및 모델 탐색, 해상도 변경 실험, MixUP, TTA & Ensemble               |
 | **로운** | SMP 모듈화, Sliding Window, 클래스별 threshold 적용 실험, multi-task learning              |
 | **태성** | MMsegmentation 라이브러리 세팅. 해상도를 고려한 실험. Mask 정보를 재처리하는 실험                         |
-| **태영** | 베이스라인 K-Fold, YOLO 실험, 앙상블 코드 수정, SR을 이용한 픽셀 보간, TTA                            |
+| **태영** &nbsp; | 베이스라인 K-Fold, YOLO 실험, 앙상블 코드 수정, SR을 이용한 픽셀 보간, TTA                            |
