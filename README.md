@@ -43,7 +43,7 @@ Xray 이미지에서 손가락 뼈들을 Segmentation하는 Multi-Label  Task를
 
 | 실험                       | <center>내용</center>                                                                                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Interpolation 보완**     | 높은 해상도를 가진 이미지이기에 Interpolation을 사용. 다만, 가장자리를 잘 포착하지 못해 이에 대한 성능 개선을 위한 실험. <br>보간 함수 변경, 원본 이미지 그대로 학습, Sliding Window, Super Resolution, SAM, Pixel Shuffling등을 적용하여 실험을 진행. |
+| **Interpolation   보완**     | 높은 해상도를 가진 이미지이기에 Interpolation을 사용. 다만, 가장자리를 잘 포착하지 못해 이에 대한 성능 개선을 위한 실험. <br>보간 함수 변경, 원본 이미지 그대로 학습, Sliding Window, Super Resolution, SAM, Pixel Shuffling등을 적용하여 실험을 진행. |
 | **Multi-Label Pixel 보완** | 손 등 뼈 부분의 픽셀이 Muti-Label인 경우, 모델 성능이 저조하여 이를 해결하기 위한 실험.<br>MixUp, Mask를 출력하고 Conv Layer로 다시 학습, 이미지 Crop 후 학습등 실험을 진행.                                                         |
 | **후처리**                  | Mask 가장자리나, 비어있는 부분을 정제하기 위한 후처리.<br>OpenCV, Conv Layer, 클래스 별 Threshold 조정 등으로 실험을 진행.                                                                                         |
 | **모델 구조 수정**             | 데이터에 맞는 모델 구조 수정 실험.<br>데이터의 해상도가 크기에 Batch를 못늘려 Batch Norm 변경, 학습 후 Conv Layer를 추가해서 Mask Fine Tuning, Auxilary Classifier 활용, Meta Data 활용, 배경 Pixel이 많은 걸 고려한 Loss 실험을 진행.   |
