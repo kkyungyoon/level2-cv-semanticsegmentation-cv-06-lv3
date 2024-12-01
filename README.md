@@ -34,7 +34,7 @@ Xray 이미지에서 손가락 뼈들을 Segmentation하는 Multi-Label  Task를
 최종 순위 Public 5위, Private 6위 / 총 23 팀 
 
 
-![image]([https://github.com/user-attachments/assets/86f3ea09-e984-4268-b39d-9e5ee1820225](https://github.com/user-attachments/assets/86f3ea09-e984-4268-b39d-9e5ee1820225))
+![image](https://github.com/user-attachments/assets/3e36d333-9ce3-4d94-8791-eeaf525005e0)
 
 
 
