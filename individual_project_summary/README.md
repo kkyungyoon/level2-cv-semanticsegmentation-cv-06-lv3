@@ -8,6 +8,8 @@
 | 4        | Pixel Shuffling, Unshuffling을 통한 interpolate 대안 실험 | Down Conv Layer와 Up Conv Layer를 추가하여 Resize 시 정보 손실 문제 해결을 시도               |
 | 5        | 겹치는 손등 뼈 부분 정확도 개선하기 위한 1x1 Conv Layer 추가 | Output Mask 뒤에 1x1 Convolution Layer를 추가하여 특정 Class의 Threshold 조정을 통한 정확도 개선 |
 
+<br>
+<br>
 
 ## 1) Auxiliary Classifier 적용 실험
 
