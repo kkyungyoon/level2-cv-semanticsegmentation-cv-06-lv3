@@ -42,13 +42,13 @@ Auxiliary Classifier는 중간 계층의 Feature Map을 기반으로 추가적�
 ##### FCN ResNet50
 | Model          | Aux Classifier | Val Score | Public Score | Private Score |
 |----------------|----------------|-----------|--------------|---------------|
-| FCN_ResNet50   | -              | 0.9444    | **0.9428**   | **0.9438**    |
+| FCN_ResNet50   | -              | 0.9444    | ✅**0.9428**   | ✅**0.9438**    |
 | FCN_ResNet50   | alpha 0.4      | 0.9449    | 0.9424       | 0.9434        |
 
 ##### DeepLabv3 ResNet101
 | Model                | Aux Classifier | Val Score | Public Score | Private Score |
 |----------------------|----------------|-----------|--------------|---------------|
-| DeepLabv3_ResNet101  | -              | 0.9472    | **0.9446**   | **0.9457**    |
+| DeepLabv3_ResNet101  | -              | 0.9472    | ✅**0.9446**   | ✅**0.9457**    |
 | DeepLabv3_ResNet101  | alpha 0.4      | 0.9473    | 0.9431       | 0.9451        |
 | DeepLabv3_ResNet101  | alpha 0.7      | 0.9457    | 0.9424       | 0.9439        |
 
@@ -94,7 +94,7 @@ Auxiliary Classifier는 중간 계층의 Feature Map을 기반으로 추가적�
 | Model         | Loss Function          | Val Score | Public Score | Private Score |
 |---------------|------------------------|-----------|--------------|---------------|
 | FCN_ResNet50  | BCE Loss               | 0.9444    | 0.9428       | 0.9438        |
-| FCN_ResNet50  | Dice Loss              | 0.9497    | **0.9488**   | **0.9497**    |
+| FCN_ResNet50  | Dice Loss              | 0.9497    | ✅**0.9488**   | ✅**0.9497**    |
 | FCN_ResNet50  | BCE Loss(0.5) + Dice Loss(0.5)   | 0.9475    | 0.9433       | 0.9450        |
 | FCN_ResNet50  | Tversky Loss           | 0.9488    | 0.9473       | 0.9481        |
 | FCN_ResNet50  | Focal Loss             | 0.9472    | 0.9432       | 0.9444        |
@@ -136,7 +136,7 @@ Auxiliary Classifier는 중간 계층의 Feature Map을 기반으로 추가적�
 
 | Model                      | Pseudo   | Public Score | Private Score |
 |----------------------------|----------|--------------|---------------|
-| BEiT_Large (BEiT_25k)      | -        | **0.9533**   | **0.9540**    |
+| BEiT_Large (BEiT_25k)      | -        | ✅**0.9533**   | ✅**0.9540**    |
 | BEiT_Large (BEiT_25k)      | Pseudo   | 0.9509       | 0.9520        |
 
 ---
@@ -189,7 +189,7 @@ Auxiliary Classifier는 중간 계층의 Feature Map을 기반으로 추가적�
 
 | Model                   | Val Score | Public Score | Private Score | Iter | Experiment                                              |
 |-------------------------|-----------|--------------|---------------|------|--------------------------------------------------------|
-| DeepLabv3+_ResNet101    | 0.9539    | **0.9592**   | **0.9647**    | 25k  | SyncBN → GN, Dice Loss                                 |
+| DeepLabv3+_ResNet101    | 0.9539    | ✅**0.9592**   | ✅**0.9647**    | 25k  | SyncBN → GN, Dice Loss                                 |
 | DeepLabv3+_ResNet101    | 0.9444    | 0.9580       | 0.9626        | 25k  | Decoder 뒤에 Up Conv Layer, SyncBN → GN, Dice Loss     |
 | DeepLabv3+_ResNet101    | 0.9676    | 0.9648       | 0.9675        | 31k  | Decoder 뒤에 Up Conv Layer, SyncBN → GN, Dice Loss<br>25k 이후 6k 추가 학습 |
 
@@ -237,12 +237,12 @@ Auxiliary Classifier는 중간 계층의 Feature Map을 기반으로 추가적�
 | Model                  | Val Score | Public Score | Private Score | Iter | Experiment                                   |
 |------------------------|-----------|--------------|---------------|------|---------------------------------------------|
 | DeepLabv3+_ResNet101   | 0.9539    | 0.9592       | 0.9647        | 25k  | SyncBN → GN, Dice Loss                      |
-| DeepLabv3+_ResNet101   | 0.9445    | **0.9618**   | 0.9647        | 25k  | SyncBN → GN, Dice Loss, 1 by 1 Conv Layer   |
+| DeepLabv3+_ResNet101   | 0.9445    | ✅**0.9618**   | 0.9647        | 25k  | SyncBN → GN, Dice Loss, 1 by 1 Conv Layer   |
 
 | Model                  | Val Score | Public Score | Private Score | Iter | Experiment                                   |
 |------------------------|-----------|--------------|---------------|------|---------------------------------------------|
 | DeepLabv3+_ResNet101   | 0.9647    | 0.9642       | 0.9674        | 37k  | SyncBN → GN, Dice Loss (25k 이후 12k 더 학습) |
-| DeepLabv3+_ResNet101   | 0.9666    | **0.9653**   | **0.9677**    | 37k  | SyncBN → GN, Dice Loss, 1 by 1 Conv Layer (25k 이후 12k 더 학습) |
+| DeepLabv3+_ResNet101   | 0.9666    | ✅**0.9653**   | ✅**0.9677**    | 37k  | SyncBN → GN, Dice Loss, 1 by 1 Conv Layer (25k 이후 12k 더 학습) |
 
 | Model                  | Val Score | Public Score | Private Score | Iter | Experiment                                   |
 |------------------------|-----------|--------------|---------------|------|---------------------------------------------|
