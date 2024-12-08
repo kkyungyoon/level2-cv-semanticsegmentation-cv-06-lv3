@@ -16,26 +16,26 @@
 ### **가설**
 
 Auxiliary Classifier는 중간 계층의 Feature Map을 기반으로 추가적인 예측을 수행하도록 설계된 보조 분류기이다.  
-[Training Auxiliary Prototypical Classifiers for Explainable Anomaly Detection in Medical Image Segmentation](https://openaccess.thecvf.com/content/WACV2023/papers/Cho_Training_Auxiliary_Prototypical_Classifiers_for_Explainable_Anomaly_Detection_in_Medical_WACV_2023_paper.pdf)에서 의료 영상 분석에 Auxiliary Classifier를 적용한 결과, 기존 방법들보다 더 높은 정확성을 달성했다.  
+선행 논문 조사에서 의료 영상 분석에 Auxiliary Classifier를 적용한 결과, 기존 방법들보다 더 높은 정확성을 달성했다.  
 이에 현재 Hand Bone Dataset에서도 성능 향상을 기대하며 Auxiliary Classifier를 적용해보았다.
 
 ---
 
 ### **방법**
 
-1. Classifier를 직접 확인 및 수정 (29개 클래스 개수에 맞게 설정).
-2. Train 함수 수정:
-   - Main Loss와 Aux Loss에 가중치를 부여하여 Total Loss를 계산.
-   - Total Loss로 Backpropagation 수행.
+1. Classifier를 직접 확인 및 수정 (29개 클래스 개수에 맞게 설정)
+2. Train 함수 수정
+   - Main Loss와 Aux Loss에 가중치를 부여하여 Total Loss를 계산
+   - Total Loss로 Backpropagation 수행
 
 ---
 
 ### **결론**
 
-1. **FCN ResNet50**에서는 Auxiliary Classifier를 적용하여 성능이 **0.0005** 상승.
-2. **DeepLabv3 ResNet101**에서는 Auxiliary Classifier를 적용하지 않은 경우가 가장 높은 성능을 기록.
-3. Auxiliary Classifier의 가중치 Alpha를 0.4에서 0.7로 조정한 결과, 성능이 오히려 **0.0016** 감소.  
-   이를 통해 Auxiliary Classifier의 비율(Alpha)은 낮추는 것이 더 적합하다고 판단.
+1. **FCN ResNet50**에서는 Auxiliary Classifier를 적용하여 성능이 **0.0005** 상승
+2. **DeepLabv3 ResNet101**에서는 Auxiliary Classifier를 적용하지 않은 경우가 가장 높은 성능을 기록
+3. Auxiliary Classifier의 가중치 Alpha를 0.4에서 0.7로 조정한 결과, 성능이 오히려 **0.0016** 감소  
+   이를 통해 Auxiliary Classifier의 비율(Alpha)은 낮추는 것이 더 적합하다고 판단
 
 #### **결과 테이블**
 
@@ -57,8 +57,7 @@ Auxiliary Classifier는 중간 계층의 Feature Map을 기반으로 추가적�
 ### **회고**
 
 1. Hand Bone Image Segmentation은 세밀한 경계와 복잡한 형태의 구조를 가지며, 클래스 간 경계가 매우 가까운 경우가 많다. Auxiliary Classifier는 주로 중간 계층에서 보다 일반적인 Feature를 학습하는 경향이 있는데, 현재는 네트워크 깊이가 상대적으로 얕아서 좋은 정보를 학습하지 못 했고, Segmentation Model 특성상 Decoder 부분에서 H,W를 점점 크게 만드는 연산을 하는데, 그 중간에서 분류를 돌리면 세밀한 부분에 대해서 큰 Resolution 보다 더 안 좋은 성능을 내서 성능이 안 나온 것 같다.
-2. 위에는 Auxiliary Classifier를 단독으로 사용했을 시, 성능이 안 나온 경우에 대한 회고였고, [Training Auxiliary Prototypical Classifiers for Explainable
-Anomaly Detection in Medical Image Segmentation](https://openaccess.thecvf.com/content/WACV2023/papers/Cho_Training_Auxiliary_Prototypical_Classifiers_for_Explainable_Anomaly_Detection_in_Medical_WACV_2023_paper.pdf) 선행논문에서는 그럼에도 불구하고 기존 Loss와 Auxiliary Classifier를 이용한 Loss를 합해서 썼는데, 논문은 OOD에 관한 연구여서 현재 Task와 달라서 결과가 다르게 나왔을 수 있었을 거라 생각했다.
+2. 위에는 Auxiliary Classifier를 단독으로 사용했을 시, 성능이 안 나온 경우에 대한 회고였고, 선행논문에서는 그럼에도 불구하고 기존 Loss와 Auxiliary Classifier를 이용한 Loss를 합해서 썼는데, 논문은 OOD에 관한 연구여서 현재 Task와 달라서 결과가 다르게 나왔을 수 있었을 거라 생각했다.
 3. Task는 다르지만 위 논문에서 Lambda를 0.1로 준 것처럼, Auxiliary Classifier의 Loss에 0.1로 가중치를 적용해서 학습시켜보았으면 좋았을 거라는 아쉬움이 있다.
 
 <br>
@@ -78,7 +77,7 @@ Anomaly Detection in Medical Image Segmentation](https://openaccess.thecvf.com/c
 
 ### **방법**
 
-- 빠르게 실험할 수 있는 FCN_ResNet50 모델을 사용.
+- 빠르게 실험할 수 있는 FCN_ResNet50 모델을 사용
 - 다음 Loss 함수들에 대해 성능 비교:
   1. Focal Loss
   2. Dice Loss
@@ -90,7 +89,7 @@ Anomaly Detection in Medical Image Segmentation](https://openaccess.thecvf.com/c
 
 ### **결론**
 
-- Dice Loss가 가장 좋은 성능을 기록.
+- Dice Loss가 가장 좋은 성능을 기록
 
 | Model         | Loss Function          | Val Score | Public Score | Private Score |
 |---------------|------------------------|-----------|--------------|---------------|
